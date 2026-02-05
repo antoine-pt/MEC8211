@@ -60,23 +60,28 @@ def normeLinf(ana, sim):
     return np.max(np.abs(ana - sim))
 
 def solveur(params):
+    """ Fonction permettant de résoudre le problème numériquement en fonction des paramsètres."""
 
-    A = np.zeros((nPts,nPts))
-    b = np.zeros(nPts)
-    pos = np.linspace(0,R,nPts)
+    ## Création des matrices A et b (Ax = b)
+    A = np.zeros((params.nPts,params.nPts))
+    b = np.zeros(params.nPts)
 
     for i in range(nPts):
-        ri = pos[i]
+        ri = params.pos[i]
+
+        # Condition limite de neumann en r=0
         if i == 0:
             A[i,i] = -1
             A[i,i+1] = 1
 
             b[i] = 0
 
+        # Condition limite de dirichlet en r=R
         elif i == nPts-1:
             A[i,i] = 1
             b[i] = params.Ce
 
+        # Milieu du domaine
         else:
             A[i,i-1] = 1 / params.dr**2
             A[i,i] = -1 / (params.dr*ri)- 2 / params.dr**2
@@ -88,7 +93,6 @@ def solveur(params):
 
 def analytique(params):
     """Fonction renvoyant le vecteur solution analytique au probleme en fonction des parametres."""
-    ## Solution analytique
     r = sp.Symbol('r')
     func = params.S / (4 * params.D) * ( r**2 - params.R**2) + params.Ce 
     anal = sp.lambdify(r, func, 'numpy')
@@ -96,22 +100,26 @@ def analytique(params):
     return anal(params.pos)
 
 if __name__ == "__main__":
+
+    # Définition des paramètres
     nPts = 5
     R = 0.5
     D = 1e-10
     S = 2e-8
     Ce = 20
 
+    # Création de l'objet params qui contient tous les paramètres
+    # on peut passer l'objet params aux fonctions qui en ont besoin
     params = Parametres(nPts=nPts,R=R,D=D,S=S,Ce=Ce)
     sim = solveur(params)
     ana = analytique(params)
 
-    print(params.dr)
-    print(params.pos)
-    params.nPts = 20
+    print(f"Erreur L1 avec {params.nPts} points :", normeL1(ana, sim))
+    print(f"Erreur L2 avec {params.nPts} points :", normeL2(ana, sim))
+    print(f"Erreur Linf avec {params.nPts} points :", normeLinf(ana, sim))
 
-    print(params.dr)
-    print(params.pos)
+
+
 
     
 
