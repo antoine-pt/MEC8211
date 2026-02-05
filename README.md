@@ -3,9 +3,9 @@ Pour run le code :
 1. Dépendances : il faut avoir numpy et sympy
 Je recommande de créer un environnement virtuel (un genre de poste de travail) pour tout installer ces dépendances. Dans le terminal de vscode :
 
-  python -m venv .venv
-  .\.venv\Scripts\activate
-  pip install numpy sympy
+  `python -m venv .venv`\\
+  `.\.venv\Scripts\activate`\\
+  `pip install numpy sympy`\\
 
 Quand on veut sortir de l'environnement, toujours dans le terminal :
 
