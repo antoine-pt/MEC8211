@@ -31,7 +31,7 @@ def normeL1(ana, sim):
     Returns:
         float: norme L1 entre les deux solutions
     """
-    return np.sum(np.abs(ana - sim)) / np.size
+    return np.sum(np.abs(ana - sim)) / ana.size
 
 def normeL2(ana, sim):
     """ Calcule la norme L2 entre une solution analytique et une solution
