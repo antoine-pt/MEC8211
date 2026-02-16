@@ -1,5 +1,6 @@
 import numpy as np
 import sympy as sp
+import matplotlib.pyplot as plt
 
 
 class Parametres():
@@ -150,9 +151,34 @@ if __name__ == "__main__":
     sim = solveur_avant(params)
     ana = analytique(params)
 
+
+    plt.figure()
+    plt.plot(params.pos, sim, "x-", label="solution numérique")
+    plt.plot(params.pos, ana, "o-", label="solution analytique")
+    plt.legend()
+    plt.xlabel("r")
+    plt.ylabel("C(r)")
+    plt.title("Comparaison entre la solution numérique et la solution analytique pour un schéma avant")
+    plt.grid()
+    plt.show()
+
     print(f"Erreur L1 avec {params.nPts} points :", normeL1(ana, sim))
     print(f"Erreur L2 avec {params.nPts} points :", normeL2(ana, sim))
     print(f"Erreur Linf avec {params.nPts} points :", normeLinf(ana, sim))
+
+
+    # Schéma centré
+    sim = solveur_centre(params)
+
+    plt.figure()
+    plt.plot(params.pos, sim, "x-", label="solution numérique")
+    plt.plot(params.pos, ana, "o-", label="solution analytique")
+    plt.legend()
+    plt.xlabel("r")
+    plt.ylabel("C(r)")
+    plt.title("Comparaison entre la solution numérique et la solution analytique pour un schéma avant")
+    plt.grid()
+    plt.show()
 
 
 
