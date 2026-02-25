@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class Parametres():
     """Classe contenant les parametres du problème."""
-    def __init__(self, nPts, nTime, endTime, R, D, k, Ce):
+    def __init__(self, nPts, nTime, endTime, R, D, k, Ce, solution=None):
         self.nPts = nPts
         self.R = R
         self.nTime = nTime
@@ -13,6 +13,11 @@ class Parametres():
         self.D = D
         self.k = k
         self.Ce = Ce
+
+        if solution is None:
+            self._solution = np.zeros(nPts)
+        else:
+            self.solution = solution
         
     @property
     def dr(self):
@@ -26,6 +31,16 @@ class Parametres():
     def pos(self):
         return np.linspace(0, self.R, self.nPts)
     
+    # Pour s'assurer que la nouvelle solution a la bonne taille et qu'on a pas fait d'erreur
+    @property
+    def solution(self):
+        return self._solution
+    @solution.setter
+    def solution(self, value):
+        array = np.asarray(value)
+        if array.size != self.nPts:
+            raise ValueError("La solution doit être un tableau de la même taille que nPts.")
+        self._solution = array
 
 def normeL1(ana, sim):
     """ Calcule la norme L1 entre une solution analytique et une solution
@@ -66,37 +81,37 @@ def normeLinf(ana, sim):
     """
     return np.max(np.abs(ana - sim))
 
-def solveur_avant(params):
-    """ Fonction permettant de résoudre le problème numériquement en fonction des paramsètres."""
+# def solveur_avant(params):
+#     """ Fonction permettant de résoudre le problème numériquement en fonction des paramsètres."""
 
-    ## Création des matrices A et b (Ax = b)
-    A = np.zeros((params.nPts,params.nPts))
-    b = np.zeros(params.nPts)
+#     ## Création des matrices A et b (Ax = b)
+#     A = np.zeros((params.nPts,params.nPts))
+#     b = np.zeros(params.nPts)
 
-    for i in range(params.nPts):
-        ri = params.pos[i]
+#     for i in range(params.nPts):
+#         ri = params.pos[i]
 
-        # Condition limite de neumann en r=0
-        if i == 0:
-            A[i,i] = -1
-            A[i,i+1] = 1
+#         # Condition limite de neumann en r=0
+#         if i == 0:
+#             A[i,i] = -1
+#             A[i,i+1] = 1
 
-            b[i] = 0
+#             b[i] = 0
 
-        # Condition limite de dirichlet en r=R
-        elif i == params.nPts-1:
-            A[i,i] = 1
-            b[i] = params.Ce
+#         # Condition limite de dirichlet en r=R
+#         elif i == params.nPts-1:
+#             A[i,i] = 1
+#             b[i] = params.Ce
 
-        # Milieu du domaine
-        else:
-            A[i,i-1] = 1 / params.dr**2
-            A[i,i] = -1 / (params.dr*ri)- 2 / params.dr**2
-            A[i,i+1] = 1 / (params.dr*ri)+ 1 / params.dr**2
+#         # Milieu du domaine
+#         else:
+#             A[i,i-1] = 1 / params.dr**2
+#             A[i,i] = -1 / (params.dr*ri)- 2 / params.dr**2
+#             A[i,i+1] = 1 / (params.dr*ri)+ 1 / params.dr**2
 
-            b[i] = params.S/ params.D
+#             b[i] = params.S/ params.D
 
-    return np.linalg.solve(A,b)
+#     return np.linalg.solve(A,b)
 
 def solveur_centre(params):
     """ Fonction permettant de résoudre le problème numériquement en fonction des paramsètres."""
@@ -114,7 +129,7 @@ def solveur_centre(params):
             ## En effet, l'équation fournit dans le devoir ne permet pas
             ## d'évaluer en r=0 avec une différence centrée
             A[i,i] = -3 / (2*params.dr)
-            A[i,i+1] = 4 / (2*params.dr)
+            A[i,i+1] = 2 / (params.dr)
             A[i,i+2] = -1 / (2*params.dr)
 
             b[i] = 0
@@ -126,18 +141,19 @@ def solveur_centre(params):
 
         # Milieu du domaine
         else:
-            A[i,i-1] = 1 / params.dr**2 - 1 / (2 * ri * params.dr)
-            A[i,i] = - 2 / params.dr**2
-            A[i,i+1] = 1 / (2 * ri * params.dr) + 1 / params.dr**2
+            A[i,i-1] = params.D * params.dt * ((1/(ri * 2 * params.dr)) - (1/(params.dr**2)))
+            A[i,i] = 2 * params.D * params.dt / (params.dr**2) + params.k * params.dt + 1
+            A[i,i+1] = (-1) * params.D * params.dt * ((1/(ri * 2 * params.dr)) + (1/(params.dr**2)))
 
-            b[i] = params.S/ params.D
-
-    return np.linalg.solve(A,b)
+            b[i] = params.solution[i]
+        
+    params.solution = np.linalg.solve(A,b)
+    return params.solution
 
 def analytique(params):
     """Fonction renvoyant le vecteur solution analytique au probleme en fonction des parametres."""
     r = sp.Symbol('r')
-    func = params.S / (4 * params.D) * ( r**2 - params.R**2) + params.Ce 
+    func = params.k / (4 * params.D) * ( r**2 - params.R**2) + params.Ce 
     anal = sp.lambdify(r, func, 'numpy')
 
     return anal(params.pos)
@@ -156,27 +172,10 @@ if __name__ == "__main__":
     # Création de l'objet params qui contient tous les paramètres
     # on peut passer l'objet params aux fonctions qui en ont besoin
     params = Parametres(nPts=nPts,nTime=nTime,endTime=endTime,R=R,D=D,k=k,Ce=Ce)
-    sim = solveur_avant(params)
+    for t in range(params.nTime):
+        sim = solveur_centre(params)
+
     ana = analytique(params)
-
-
-    plt.figure()
-    plt.plot(params.pos, sim, "x-", label="solution numérique")
-    plt.plot(params.pos, ana, "o-", label="solution analytique")
-    plt.legend()
-    plt.xlabel("r")
-    plt.ylabel("C(r)")
-    plt.title("Comparaison entre la solution numérique et la solution analytique pour un schéma avant")
-    plt.grid()
-    plt.show()
-
-    print(f"Erreur L1 avec {params.nPts} points :", normeL1(ana, sim))
-    print(f"Erreur L2 avec {params.nPts} points :", normeL2(ana, sim))
-    print(f"Erreur Linf avec {params.nPts} points :", normeLinf(ana, sim))
-
-
-    # Schéma centré
-    sim = solveur_centre(params)
 
     plt.figure()
     plt.plot(params.pos, sim, "x-", label="solution numérique")
