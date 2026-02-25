@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from solveur import *
+import solveur_permanent
 
 
 def solve(solveur, norme):
@@ -11,9 +11,9 @@ def solve(solveur, norme):
     S = 1e-8
     Ce = 10
 
-    params = Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
+    params = solveur_permanent.Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
     sim = solveur(params)
-    ana = analytique(params)
+    ana = solveur_permanent.analytique(params)
 
     # Vérifier que la solution numérique est proche de la solution analytique
 
@@ -22,7 +22,7 @@ def solve(solveur, norme):
     for i in range(N):
         params.nPts = nPts
         sim = solveur(params)
-        ana = analytique(params)
+        ana = solveur_permanent.analytique(params)
         L[i] = norme(ana,sim)
         nPts *= 2
 
@@ -38,9 +38,9 @@ def solve(solveur, norme):
 if __name__ == "__main__":
 
     ## Schéma avant
-    pasL1, L1, ordreL1 = solve(solveur_avant, normeL1)
-    pasL2, L2, ordreL2 = solve(solveur_avant, normeL2)
-    pasLinf, Linf, ordreLinf = solve(solveur_avant, normeLinf)
+    pasL1, L1, ordreL1 = solve(solveur_permanent.solveur_avant, solveur_permanent.normeL1)
+    pasL2, L2, ordreL2 = solve(solveur_permanent.solveur_avant, solveur_permanent.normeL2)
+    pasLinf, Linf, ordreLinf = solve(solveur_permanent.solveur_avant, solveur_permanent.normeLinf)
     text = (f"Ordre de convergence L1 : {ordreL1[-1]:.7f} \n"
             f"Ordre de convergence L2: {ordreL2[-1]:.7f} \n"
             f"Ordre de convergence Linf: {ordreLinf[-1]:.7f} \n")
@@ -57,9 +57,9 @@ if __name__ == "__main__":
     plt.show()
 
     ## Schéma centré
-    pasL1, L1, ordreL1 = solve(solveur_centre, normeL1)
-    pasL2, L2, ordreL2 = solve(solveur_centre, normeL2)
-    pasLinf, Linf, ordreLinf = solve(solveur_centre, normeLinf)
+    pasL1, L1, ordreL1 = solve(solveur_permanent.solveur_centre, solveur_permanent.normeL1)
+    pasL2, L2, ordreL2 = solve(solveur_permanent.solveur_centre, solveur_permanent.normeL2)
+    pasLinf, Linf, ordreLinf = solve(solveur_permanent.solveur_centre, solveur_permanent.normeLinf)
     text = (f"Ordre de convergence L1 : {ordreL1[-1]:.7f} \n"
             f"Ordre de convergence L2: {ordreL2[-1]:.7f} \n"
             f"Ordre de convergence Linf: {ordreLinf[-1]:.7f} \n")

@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from solveur import *
+import solveur_permanent
 
 class TestSolveur(unittest.TestCase):
 
@@ -12,9 +12,9 @@ class TestSolveur(unittest.TestCase):
         S = 1e-8
         Ce = 10
 
-        params = Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
-        sim = solveur_avant(params)
-        ana = analytique(params)
+        params = solveur_permanent.Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
+        sim = solveur_permanent.solveur_avant(params)
+        ana = solveur_permanent.analytique(params)
 
         # Vérifier que la solution numérique est proche de la solution analytique
         
@@ -30,12 +30,12 @@ class TestSolveur(unittest.TestCase):
         S = 1e-8
         Ce = 0
 
-        params = Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
-        sim1 = solveur_centre(params)
+        params = solveur_permanent.Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
+        sim1 = solveur_permanent.solveur_centre(params)
 
         # Modifier les paramètres pour simuler un changement de référentiel
         params.S *= 2  # Doubler la source
-        sim2 = solveur_centre(params)
+        sim2 = solveur_permanent.solveur_centre(params)
 
         # Vérifier que la solution numérique est proportionnelle à la source
         # np.allclose vérifie que les deux tableaux sont égaux à une tolérance (prise par défaut) près
@@ -49,7 +49,7 @@ class TestSolveur(unittest.TestCase):
         S = 1e-8
         Ce = 10
 
-        params = Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
+        params = solveur_permanent.Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
 
         # Vérifier que la solution numérique est proche de la solution analytique
 
@@ -57,9 +57,9 @@ class TestSolveur(unittest.TestCase):
         L2 = np.empty(N)
         for i in range(N):
             params.nPts = nPts
-            sim = solveur_avant(params)
-            ana = analytique(params)
-            L2[i] = normeL2(ana,sim)
+            sim = solveur_permanent.solveur_avant(params)
+            ana = solveur_permanent.analytique(params)
+            L2[i] = solveur_permanent.normeL2(ana,sim)
             nPts *= 2
 
         ordre = np.log(L2[:-1]/L2[1:])/np.log(2)
@@ -74,9 +74,9 @@ class TestSolveur(unittest.TestCase):
         S = 1e-8
         Ce = 10
 
-        params = Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
-        sim = solveur_centre(params)
-        ana = analytique(params)
+        params = solveur_permanent.Parametres(nPts=nPts, R=R, D=D, S=S, Ce=Ce)
+        sim = solveur_permanent.solveur_centre(params)
+        ana = solveur_permanent.analytique(params)
 
         print(sim)
         print(ana)
@@ -86,9 +86,9 @@ class TestSolveur(unittest.TestCase):
         L2 = np.empty(N)
         for i in range(N):
             params.nPts = nPts
-            sim = solveur_centre(params)
-            ana = analytique(params)
-            L2[i] = normeL2(ana,sim)
+            sim = solveur_permanent.solveur_centre(params)
+            ana = solveur_permanent.analytique(params)
+            L2[i] = solveur_permanent.normeL2(ana,sim)
             nPts *= 2
 
         ordre = np.log(L2[:-1]/L2[1:])/np.log(2)
