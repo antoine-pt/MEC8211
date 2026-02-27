@@ -217,7 +217,7 @@ def solveur_centre(params):
 
 
 if __name__ == "__main__":
-
+ 
     # Définition des paramètres
     nPts = 9
     R = 0.5
@@ -239,6 +239,13 @@ if __name__ == "__main__":
     except:
         ana = np.zeros(nPts)
 
+    print("\n")
+    print("L2 =", normeL2(ana, sim))
+    print("nPts =", params.nPts)
+    print("dr =", params.dr)
+    print("dt =", params.dt)
+    print("\n")
+
     plt.figure()
     plt.plot(params.pos, sim, "x-", label="solution numérique")
     plt.plot(params.pos, ana, "o-", label="solution MMS")
@@ -248,6 +255,7 @@ if __name__ == "__main__":
     plt.title("Comparaison entre la solution manufacturée et la solution analytique pour un schéma centré.")
     plt.grid()
     plt.show()
+    plt.close()
 
     params.mmsON = False
     params.nPts = 11
@@ -262,6 +270,7 @@ if __name__ == "__main__":
     plt.title("Solution numérique du problème de Mme D'AVIGNON pour un schéma centré, 11 points.")
     plt.grid()
     plt.show()
+    plt.close()
 
 
 
