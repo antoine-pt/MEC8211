@@ -56,26 +56,29 @@ PYTHON=.venv/Scripts/python
 
     # change nPts dans le ficher
     # stream editor "substitution / pattern / replacement/" > overwrite in temp_$1.py 
+
+    sed "s/^[[:space:]]*D = .*/    D = 1/" $1.py > temp_$1.py
+    sed -i "s/^[[:space:]]*k = .*/    k = 4/" temp_$1.py
+
     if test "$rep" = "e"; then
-      sed "s/^[[:space:]]*nPts = .*/    nPts = $nPts/" $1.py > temp_$1.py
+      sed -i "s/^[[:space:]]*nPts = .*/    nPts = $nPts/" temp_$1.py
+      sed -i "s/^[[:space:]]*nTime = .*/    nTime = 1000/" temp_$1.py
     else
-      sed "s/^[[:space:]]*nPts = .*/    nPts = 100/" $1.py >> temp_$1.py
+      sed -i "s/^[[:space:]]*nPts = .*/    nPts = 1000/" temp_$1.py
       sed -i "s/^[[:space:]]*nTime = .*/    nTime = $nPts/" temp_$1.py
     fi
-    sed -i "s/^[[:space:]]*plt.show()//" temp_$1.py
-
+    
+    sed -i '/^[[:space:]]*plt.figure()/,$d' temp_$1.py
     # exécuter le script et écrire les résultats dans le fichier résultats
-    $PYTHON -m temp_$1 | awk '/L2 = / { L2= $3 } /dr = / {dr = $3} /dt = / {dt=$3} END {print L2 "," dr "," dt}'>> resultats
+    $PYTHON -m temp_$1 | awk '/^L2 = / { L2 = $3 } /^dr = / {dr = $3} /^dt = / {dt=$3} END {print L2 "," dr "," dt}'>> resultats
 
 
 
     #delete le temp file
-    rm -f temp_$1/temp_$1.py
+    rm temp_$1.py
 
   done < $2 # from liste des resolutions
 
   # exécution du script pour la génération des graphiques
   # et le calcul de l'ordre
   $PYTHON -m analyse_convergence_implicite "$rep"
-
-  rm temp_$1.py

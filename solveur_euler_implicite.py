@@ -73,79 +73,86 @@ class Parametres():
         if value is None or value == False:
             self._mms = None
         else:
-            self._mms = sp.cos(2 * sp.pi * self._r / self.R) * sp.exp(-self._t / (self.endTime/10))
+            # self._mms = sp.cos(2 * sp.pi * self._r / self.R)
+            # self._mms = sp.cos(2 * sp.pi * self._r / self.R) * sp.exp(-self._t / (self.endTime/10))
+            self._mms = 1 + sp.cos(2 * sp.pi * self._r / self.R) * sp.cos(self._t * 2 * sp.pi/self.endTime)
+
+    def printself(self):
+        """Affiche les attributs principaux de l'objet pour debug."""
+        print("Paramètres courants :")
+        print(f"  nPts    = {self.nPts}")
+        print(f"  nTime   = {self.nTime}")
+        print(f"  endTime = {self.endTime}")
+        print(f"  R       = {self.R}")
+        print(f"  D       = {self.D}")
+        print(f"  k       = {self.k}")
+        print(f"  Ce      = {self.Ce}")
+        print(f"  time    = {self.time}")
+        print(f"  dr      = {self.dr}")
+        print(f"  dt      = {self.dt}")
+        print(f"  mmsON   = {self.mmsON}")
 
 
-def normeL1(ana, sim):
-    """ Calcule la norme L1 entre une solution analytique et une solution
-    numérique.
+def normeL1(ana, sim, params):
+    """ Calcule la norme L1 entre une solution MMS analytique et une solution
+    numérique. Norme calculée en temps et espace!
 
     Args:
-        ana (np.array): solution analytique
+        ana (np.array): solution MMS
         sim (np.array): solution numérique
 
     Returns:
         float: norme L1 entre les deux solutions
     """
-    return np.sum(np.abs(ana - sim)) / ana.size
+    L1 = 0
+    for time in range(ana.shape[0]):
+        error = np.abs(ana[time,:] - sim[time,:])
 
-def normeL2(ana, sim):
-    """ Calcule la norme L2 entre une solution analytique et une solution
-    numérique.
+        # params.pos**2 pour pondérer l'erreur en fonction de la positino sur 
+        # le rayon (domaine cylindrique)
+        L1 += np.sum(error)/ana.shape[1]
+    return L1/ana.shape[0]
+
+def normeL2(ana, sim, params):
+    """ Calcule la norme L2 entre une solution MMS analytique et une solution
+    numérique. Norme calculée en temps et espace!
 
     Args:
-        ana (np.array): solution analytique
+        ana (np.array): solution MMS
         sim (np.array): solution numérique
 
     Returns:
         float: norme L2 entre les deux solutions
     """
-    return np.sqrt(np.sum((ana - sim)**2) / ana.size)
+    L2 = 0
+    for time in range(ana.shape[0]):
+        error = ana[time,:] - sim[time,:]
 
-def normeLinf(ana, sim):
-    """ Calcule la norme Linf entre une solution analytique et une solution
-    numérique.
+        # Pondération cylindrique: intégrale de u² * r dr
+        # Pour r=0, utiliser la règle du trapèze qui évite singularité
+        r_weights = params.pos  # valeurs de r
+        weighted_error_sq = error**2 * r_weights
+        L2 += np.sum(weighted_error_sq) * params.dr
+    
+    # Normalisation par le "volume" cylindrique total et le temps
+    # Intégrale de r dr de 0 à R = R²/2
+    total_measure = 0.5 * params.R**2 * params.endTime
+    return np.sqrt(L2 / total_measure)
+
+def normeLinf(ana, sim, params):
+    """ Calcule la norme Linf entre une solution MMS analytique et une solution
+    numérique. Norme calculée en temps et espace!
 
     Args:
-        ana (np.array): solution analytique
+        ana (np.array): solution MMS
         sim (np.array): solution numérique
 
     Returns:
         float: norme Linf entre les deux solutions
     """
+
     return np.max(np.abs(ana - sim))
 
-# def solveur_avant(params):
-#     """ Fonction permettant de résoudre le problème numériquement en fonction des paramsètres."""
-
-#     ## Création des matrices A et b (Ax = b)
-#     A = np.zeros((params.nPts,params.nPts))
-#     b = np.zeros(params.nPts)
-
-#     for i in range(params.nPts):
-#         ri = params.pos[i]
-
-#         # Condition limite de neumann en r=0
-#         if i == 0:
-#             A[i,i] = -1
-#             A[i,i+1] = 1
-
-#             b[i] = 0
-
-#         # Condition limite de dirichlet en r=R
-#         elif i == params.nPts-1:
-#             A[i,i] = 1
-#             b[i] = params.Ce
-
-#         # Milieu du domaine
-#         else:
-#             A[i,i-1] = 1 / params.dr**2
-#             A[i,i] = -1 / (params.dr*ri)- 2 / params.dr**2
-#             A[i,i+1] = 1 / (params.dr*ri)+ 1 / params.dr**2
-
-#             b[i] = params.S/ params.D
-
-#     return np.linalg.solve(A,b)
 
 def solveur_centre(params):
     """ Fonction permettant de résoudre le problème numériquement en fonction des paramsètres."""
@@ -178,7 +185,7 @@ def solveur_centre(params):
     for i in range(params.nPts):
         ri = params.pos[i]
 
-        # Condition limite de neumann en r=0
+        # Condition limite de neumann en r=0 (GEAR forward scheme)
         if i == 0:
             ## Ici, on a une Gear Avant pour la dérivée première
             ## En effet, l'équation fournit dans le devoir ne permet pas
@@ -186,9 +193,6 @@ def solveur_centre(params):
             A[i,i] = -3 / (2*params.dr)
             A[i,i+1] = 2 / (params.dr)
             A[i,i+2] = -1 / (2*params.dr)
-
-            # Ici, comme on a condition de symétrie imposée, il est bien important de 
-            # choisir une MMS qui a une dérivée nulle en (r=0,t)
             b[i] = 0
 
         # Condition limite de dirichlet en r=R
@@ -209,6 +213,8 @@ def solveur_centre(params):
             A[i,i+1] = (-1) * params.D * params.dt * ((1/(ri * 2 * params.dr)) + (1/(params.dr**2)))
 
             # Pour rappel, source_term est nul si MMS n'est pas activée
+            if ri == 0:
+                raise ValueError("Erreur : r ne doit pas être égal à 0 dans le milieu du domaine.")
             b[i] = params.solution[i] + source_term(ri,params.time + params.dt) * params.dt
         
     params.solution = np.linalg.solve(A,b)
@@ -219,58 +225,74 @@ def solveur_centre(params):
 if __name__ == "__main__":
  
     # Définition des paramètres
-    nPts = 9
+    nPts = 32
     R = 0.5
-    nTime = 100
-    endTime = 4e9
-    D = 1e-10
-    k = 4e-09
+    endTime = 0.1
+    nTime = 1000
+    # endTime = 4e9
+    # D = 1e-10
+    # k = 4e-09
+
+    D = 1
+    k = 4
     Ce = 20
 
     # Création de l'objet params qui contient tous les paramètres
     # on peut passer l'objet params aux fonctions qui en ont besoin
     params = Parametres(nPts=nPts,nTime=nTime,endTime=endTime,R=R,D=D,k=k,Ce=Ce)
-    for t in range(params.nTime):
-        sim = solveur_centre(params)
+    
 
-    try:
-        C_mms = sp.lambdify(["r","t"],params.mms)
-        ana = C_mms(params.pos, params.endTime)
-    except:
-        ana = np.zeros(nPts)
+    ana = np.zeros((params.nTime,params.nPts))
+    sim = np.zeros((params.nTime,params.nPts))
+    C_mms = sp.lambdify(["r","t"],params.mms)
+
+    sim[0,:] = C_mms(params.pos, params.dt * 0)
+    ana[0,:] = C_mms(params.pos, params.dt * 0)
+
+    for t in range(params.nTime-1):
+        sim[t+1,:] = solveur_centre(params)
+        ana[t+1,:] = C_mms(params.pos, params.time)
+
 
     print("\n")
-    print("L2 =", normeL2(ana, sim))
+    print("L1 =", normeL1(ana, sim, params))
+    print("L2 =", normeL2(ana, sim, params))
+    print("Linf =", normeLinf(ana, sim, params))
     print("nPts =", params.nPts)
     print("dr =", params.dr)
     print("dt =", params.dt)
     print("\n")
 
-    plt.figure()
-    plt.plot(params.pos, sim, "x-", label="solution numérique")
-    plt.plot(params.pos, ana, "o-", label="solution MMS")
-    plt.legend()
-    plt.xlabel("r")
-    plt.ylabel("C(r)")
-    plt.title("Comparaison entre la solution manufacturée et la solution analytique pour un schéma centré.")
-    plt.grid()
-    plt.show()
-    plt.close()
 
-    params.mmsON = False
-    params.nPts = 11
-    for t in range(params.nTime):
-        sim = solveur_centre(params)
 
-    plt.figure()
-    plt.plot(params.pos, sim, "x-", label="solution numérique")
-    plt.legend()
-    plt.xlabel("r")
-    plt.ylabel("C(r)")
-    plt.title("Solution numérique du problème de Mme D'AVIGNON pour un schéma centré, 11 points.")
-    plt.grid()
-    plt.show()
-    plt.close()
+    # for i in range(params.nTime-1):
+    #     if i%100 == 0:
+    #         print(i)
+    #         plt.figure()
+    #         plt.plot(params.pos, sim[i,:], "x-", label="solution numérique")
+    #         plt.plot(params.pos, ana[i,:], "o-", label="solution MMS")
+    #         plt.legend()
+    #         plt.xlabel("r")
+    #         plt.ylabel("C(r)")
+    #         plt.title("Comparaison entre la solution manufacturée et la solution analytique pour un schéma centré.")
+    #         plt.grid()
+    #         plt.show()
+    #         # plt.close()
+    # print("L2_final =", L2_final(ana,sim,params))
+    # params.mmsON = False
+    # params.nPts = 11
+    # for t in range(params.nTime):
+    #     sim = solveur_centre(params)
+
+    # plt.figure()
+    # plt.plot(params.pos, sim, "x-", label="solution numérique")
+    # plt.legend()
+    # plt.xlabel("r")
+    # plt.ylabel("C(r)")
+    # plt.title("Solution numérique du problème de Mme D'AVIGNON pour un schéma centré, 11 points.")
+    # plt.grid()
+    # plt.show()
+    # plt.close()
 
 
 
