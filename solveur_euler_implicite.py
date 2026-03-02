@@ -132,12 +132,12 @@ def normeL2(ana, sim, params):
         # Pour r=0, utiliser la règle du trapèze qui évite singularité
         r_weights = params.pos  # valeurs de r
         weighted_error_sq = error**2 * r_weights
-        L2 += np.sum(weighted_error_sq) * params.dr
+        L2 += np.sum(weighted_error_sq) * params.dr * params.dt
     
     # Normalisation par le "volume" cylindrique total et le temps
     # Intégrale de r dr de 0 à R = R²/2
-    total_measure = 0.5 * params.R**2 * params.endTime
-    return np.sqrt(L2 / total_measure)
+    domaine = params.R*2 * params.endTime
+    return np.sqrt(L2 / domaine)
 
 def normeLinf(ana, sim, params):
     """ Calcule la norme Linf entre une solution MMS analytique et une solution
@@ -209,7 +209,7 @@ def solveur_centre(params):
         # Milieu du domaine
         else:
             A[i,i-1] = params.D * params.dt * ((1/(ri * 2 * params.dr)) - (1/(params.dr**2)))
-            A[i,i] = 2 * params.D * params.dt / (params.dr**2) + params.k * params.dt + 1
+            A[i,i] = (2) * params.D * params.dt / (params.dr**2) + params.k * params.dt + 1
             A[i,i+1] = (-1) * params.D * params.dt * ((1/(ri * 2 * params.dr)) + (1/(params.dr**2)))
 
             # Pour rappel, source_term est nul si MMS n'est pas activée
