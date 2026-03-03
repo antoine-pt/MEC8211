@@ -100,18 +100,25 @@ def normeL1(ana, sim, params):
     Args:
         ana (np.array): solution MMS
         sim (np.array): solution numérique
+        params: paramètres de la simulation
 
     Returns:
-        float: norme L1 entre les deux solutions
+        tuple: (L1SpatioTemporel, L1Final) - normes L1 spatio-temporelle et au dernier pas de temps
     """
     L1 = 0
+    r_weights = params.pos  # valeurs de r (venant du rdr)
     for time in range(ana.shape[0]):
-        error = np.abs(ana[time,:] - sim[time,:])
+        weighted_error = np.abs(ana[time,:] - sim[time,:]) * r_weights
+        L1 += np.sum(weighted_error) * params.dr * params.dt
+    
+    # Dernier pas de temps uniquement
+    L1Final = np.sqrt((np.sum(weighted_error) * params.dr) / params.R)
 
-        # params.pos**2 pour pondérer l'erreur en fonction de la positino sur 
-        # le rayon (domaine cylindrique)
-        L1 += np.sum(error)/ana.shape[1]
-    return L1/ana.shape[0]
+    # Sur tous les pas de temps
+    domaine = params.R * params.endTime
+    L1SpatioTemporel = np.sqrt(L1 / (domaine))
+
+    return L1SpatioTemporel, L1Final
 
 def normeL2(ana, sim, params):
     """ Calcule la norme L2 entre une solution MMS analytique et une solution
@@ -120,24 +127,26 @@ def normeL2(ana, sim, params):
     Args:
         ana (np.array): solution MMS
         sim (np.array): solution numérique
+        params: paramètres de la simulation
 
     Returns:
-        float: norme L2 entre les deux solutions
+        tuple: (L2SpatioTemporel, L2Final) - normes L2 spatio-temporelle et au dernier pas de temps
     """
     L2 = 0
+    r_weights = params.pos  # valeurs de r (venant du rdr)
     for time in range(ana.shape[0]):
         error = ana[time,:] - sim[time,:]
-
-        # Pondération cylindrique: intégrale de u² * r dr
-        # Pour r=0, utiliser la règle du trapèze qui évite singularité
-        r_weights = params.pos  # valeurs de r
         weighted_error_sq = error**2 * r_weights
         L2 += np.sum(weighted_error_sq) * params.dr * params.dt
-    
-    # Normalisation par le "volume" cylindrique total et le temps
-    # Intégrale de r dr de 0 à R = R²/2
-    domaine = params.R*2 * params.endTime
-    return np.sqrt(L2 / domaine)
+
+    # Dernier pas de temps uniquement
+    L2Final = np.sqrt(np.sum(weighted_error_sq) * params.dr /params.R)
+
+    # Sur tous les pas de temps
+    domaine = params.R * params.endTime
+    L2SpatioTemporel = np.sqrt(L2 / (domaine))
+
+    return L2SpatioTemporel, L2Final
 
 def normeLinf(ana, sim, params):
     """ Calcule la norme Linf entre une solution MMS analytique et une solution
