@@ -223,7 +223,8 @@ def solveur_centre(params):
 
 
 if __name__ == "__main__":
- 
+
+    #TODO: régler les parametres avec la bash
     # Définition des paramètres
     nPts = 32
     R = 0.5
@@ -246,7 +247,14 @@ if __name__ == "__main__":
     sim = np.zeros((params.nTime,params.nPts))
     C_mms = sp.lambdify(["r","t"],params.mms)
 
-    sim[0,:] = C_mms(params.pos, params.dt * 0)
+    # Setup de la solution initiale, très important!
+    if params.mmsON:
+        sim[0,:] = C_mms(params.pos, params.dt * 0)
+        params.solution = sim[0,:].copy()
+    else:
+        sim[0,:] = 0
+        #params.solution par défaut à 0.
+
     ana[0,:] = C_mms(params.pos, params.dt * 0)
 
     for t in range(params.nTime-1):
