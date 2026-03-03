@@ -28,8 +28,6 @@ with open("resultats", mode="r", newline="") as file:
     
     ordres = np.log(L2[:-1]/L2[1:])/np.log(dh[:-1]/dh[1:])
     print(ordres)
-    plt.plot(dh,L2,label="Some shit")
-    plt.show()
     string = ""
     for i in range(len(ordres)):
         string += f"Ordre de convergence entre les résolutions {i} et {i+1} : {ordres[i]:.7f} \n"
