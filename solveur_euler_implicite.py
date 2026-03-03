@@ -100,18 +100,25 @@ def normeL1(ana, sim, params):
     Args:
         ana (np.array): solution MMS
         sim (np.array): solution numérique
+        params: paramètres de la simulation
 
     Returns:
-        float: norme L1 entre les deux solutions
+        tuple: (L1SpatioTemporel, L1Final) - normes L1 spatio-temporelle et au dernier pas de temps
     """
     L1 = 0
+    r_weights = params.pos  # valeurs de r (venant du rdr)
     for time in range(ana.shape[0]):
-        error = np.abs(ana[time,:] - sim[time,:])
+        weighted_error = np.abs(ana[time,:] - sim[time,:]) * r_weights
+        L1 += np.sum(weighted_error) * params.dr * params.dt
+    
+    # Dernier pas de temps uniquement
+    L1Final = np.sum(weighted_error) * params.dr / params.R
 
-        # params.pos**2 pour pondérer l'erreur en fonction de la positino sur 
-        # le rayon (domaine cylindrique)
-        L1 += np.sum(error)/ana.shape[1]
-    return L1/ana.shape[0]
+    # Sur tous les pas de temps
+    domaine = params.R * params.endTime
+    L1SpatioTemporel = L1 / (domaine)
+
+    return L1SpatioTemporel, L1Final
 
 def normeL2(ana, sim, params):
     """ Calcule la norme L2 entre une solution MMS analytique et une solution
@@ -120,24 +127,26 @@ def normeL2(ana, sim, params):
     Args:
         ana (np.array): solution MMS
         sim (np.array): solution numérique
+        params: paramètres de la simulation
 
     Returns:
-        float: norme L2 entre les deux solutions
+        tuple: (L2SpatioTemporel, L2Final) - normes L2 spatio-temporelle et au dernier pas de temps
     """
     L2 = 0
+    r_weights = params.pos  # valeurs de r (venant du rdr)
     for time in range(ana.shape[0]):
         error = ana[time,:] - sim[time,:]
-
-        # Pondération cylindrique: intégrale de u² * r dr
-        # Pour r=0, utiliser la règle du trapèze qui évite singularité
-        r_weights = params.pos  # valeurs de r
         weighted_error_sq = error**2 * r_weights
-        L2 += np.sum(weighted_error_sq) * params.dr
-    
-    # Normalisation par le "volume" cylindrique total et le temps
-    # Intégrale de r dr de 0 à R = R²/2
-    total_measure = 0.5 * params.R**2 * params.endTime
-    return np.sqrt(L2 / total_measure)
+        L2 += np.sum(weighted_error_sq) * params.dr * params.dt
+
+    # Dernier pas de temps uniquement
+    L2Final = np.sqrt(np.sum(weighted_error_sq) * params.dr /params.R)
+
+    # Sur tous les pas de temps
+    domaine = params.R * params.endTime
+    L2SpatioTemporel = np.sqrt(L2 / (domaine))
+
+    return L2SpatioTemporel, L2Final
 
 def normeLinf(ana, sim, params):
     """ Calcule la norme Linf entre une solution MMS analytique et une solution
@@ -209,7 +218,7 @@ def solveur_centre(params):
         # Milieu du domaine
         else:
             A[i,i-1] = params.D * params.dt * ((1/(ri * 2 * params.dr)) - (1/(params.dr**2)))
-            A[i,i] = 2 * params.D * params.dt / (params.dr**2) + params.k * params.dt + 1
+            A[i,i] = (2) * params.D * params.dt / (params.dr**2) + params.k * params.dt + 1
             A[i,i+1] = (-1) * params.D * params.dt * ((1/(ri * 2 * params.dr)) + (1/(params.dr**2)))
 
             # Pour rappel, source_term est nul si MMS n'est pas activée
@@ -223,7 +232,8 @@ def solveur_centre(params):
 
 
 if __name__ == "__main__":
- 
+
+    #TODO: régler les parametres avec la bash
     # Définition des paramètres
     nPts = 32
     R = 0.5
@@ -246,7 +256,14 @@ if __name__ == "__main__":
     sim = np.zeros((params.nTime,params.nPts))
     C_mms = sp.lambdify(["r","t"],params.mms)
 
-    sim[0,:] = C_mms(params.pos, params.dt * 0)
+    # Setup de la solution initiale, très important!
+    if params.mmsON:
+        sim[0,:] = C_mms(params.pos, params.dt * 0)
+        params.solution = sim[0,:].copy()
+    else:
+        sim[0,:] = 0
+        #params.solution par défaut à 0.
+
     ana[0,:] = C_mms(params.pos, params.dt * 0)
 
     for t in range(params.nTime-1):
@@ -255,8 +272,10 @@ if __name__ == "__main__":
 
 
     print("\n")
-    print("L1 =", normeL1(ana, sim, params))
-    print("L2 =", normeL2(ana, sim, params))
+    print("L1 =", normeL1(ana, sim, params)[0])
+    print("L1Final =", normeL1(ana, sim, params)[1])
+    print("L2 =", normeL2(ana, sim, params)[0])
+    print("L2Final =", normeL2(ana, sim, params)[1])
     print("Linf =", normeLinf(ana, sim, params))
     print("nPts =", params.nPts)
     print("dr =", params.dr)

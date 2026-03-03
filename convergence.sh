@@ -29,7 +29,7 @@ PYTHON=.venv/Scripts/python
   echo "--> Nombre de résolutions testées : "$nb_resolutions
   echo ""
 
-  echo "L2,dr,dt" > resultats
+  echo "L1,L1Final,L2,L2Final,Linf,nPts,dr,dt" > resultats
 
   if test -s $1.py ; then
 	  echo "--> Le fichier "$1" existe !"
@@ -70,7 +70,17 @@ PYTHON=.venv/Scripts/python
     
     sed -i '/^[[:space:]]*plt.figure()/,$d' temp_$1.py
     # exécuter le script et écrire les résultats dans le fichier résultats
-    $PYTHON -m temp_$1 | awk '/^L2 = / { L2 = $3 } /^dr = / {dr = $3} /^dt = / {dt=$3} END {print L2 "," dr "," dt}'>> resultats
+    $PYTHON -m temp_$1 | awk '
+    /^L1 = / { L1 = $3 }
+    /^L1Final = / { L1Final = $3 }
+    /^L2 = / { L2 = $3 }
+    /^L2Final = / { L2Final = $3 }
+    /^Linf = / { Linf = $3 }
+    /^nPts = / { nPts = $3 }
+    /^dr = / { dr = $3 }
+    /^dt = / { dt = $3 }
+    END { print L1 "," L1Final "," L2 "," L2Final "," Linf "," nPts "," dr "," dt }
+    ' >> resultats
 
 
 
