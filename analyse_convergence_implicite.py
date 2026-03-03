@@ -34,19 +34,23 @@ with open("resultats", mode="r", newline="") as file:
     Linf = np.asarray(Linf)
     dh = np.asarray(dh)
     
+    # Calcul de tous les ordres de convergence pour vérification
     ordresL1 = np.log(L1[:-1]/L1[1:])/np.log(dh[:-1]/dh[1:])
     ordresL2 = np.log(L2[:-1]/L2[1:])/np.log(dh[:-1]/dh[1:])
     ordresLinf = np.log(Linf[:-1]/Linf[1:])/np.log(dh[:-1]/dh[1:])
+    print(f"Ordres de convergence L1 : {ordresL1}")
+    print(f"Ordres de convergence L2 : {ordresL2}")
+    print(f"Ordres de convergence Linf : {ordresLinf}") 
 
-    print(ordresL1)
-
-    print(ordresL2)
-
-    print(ordresLinf)
+    # Ordre de convergence asymptotique (régression linéaire en log-log)
+    ordre_asymp_L1 = np.polyfit(np.log(dh[1:-1]), np.log(L1[1:-1]), 1)[0]
+    ordre_asymp_L2 = np.polyfit(np.log(dh[1:-1]), np.log(L2[1:-1]), 1)[0]
+    ordre_asymp_Linf = np.polyfit(np.log(dh[1:-1]), np.log(Linf[1:-1]), 1)[0]
 
     string = ""
-    for i in range(len(ordresL2)):
-        string += f"Ordre de convergence L2 entre les résolutions {i} et {i+1} : {ordresL2[i]:.7f} \n"
+    string += f"\nOrdre asymptotique L1 : {ordre_asymp_L1:.7f}"
+    string += f"\nOrdre asymptotique L2 : {ordre_asymp_L2:.7f}"
+    string += f"\nOrdre asymptotique Linf : {ordre_asymp_Linf:.7f}"
     text = (string)
 
     plt.figure()
@@ -58,6 +62,6 @@ with open("resultats", mode="r", newline="") as file:
     plt.ylabel("erreur")
     plt.title("Erreur de la solution numérique en fonction de la MMS pour un schéma centré")
     plt.grid("both", ls="--")
-    plt.text(0.4, 0.75, text, fontsize=8, ha='center', va='center', transform=plt.gca().transAxes)
+    plt.text(0.4, 0.9, text, fontsize=8, ha='center', va='center', transform=plt.gca().transAxes)
     plt.show()
 
