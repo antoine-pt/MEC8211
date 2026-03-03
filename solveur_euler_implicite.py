@@ -112,11 +112,11 @@ def normeL1(ana, sim, params):
         L1 += np.sum(weighted_error) * params.dr * params.dt
     
     # Dernier pas de temps uniquement
-    L1Final = np.sqrt((np.sum(weighted_error) * params.dr) / params.R)
+    L1Final = np.sum(weighted_error) * params.dr / params.R
 
     # Sur tous les pas de temps
     domaine = params.R * params.endTime
-    L1SpatioTemporel = np.sqrt(L1 / (domaine))
+    L1SpatioTemporel = L1 / (domaine)
 
     return L1SpatioTemporel, L1Final
 
