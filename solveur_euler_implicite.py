@@ -272,8 +272,10 @@ if __name__ == "__main__":
 
 
     print("\n")
-    print("L1 =", normeL1(ana, sim, params))
-    print("L2 =", normeL2(ana, sim, params))
+    print("L1 =", normeL1(ana, sim, params)[0])
+    print("L1Final =", normeL1(ana, sim, params)[1])
+    print("L2 =", normeL2(ana, sim, params)[0])
+    print("L2Final =", normeL2(ana, sim, params)[1])
     print("Linf =", normeLinf(ana, sim, params))
     print("nPts =", params.nPts)
     print("dr =", params.dr)

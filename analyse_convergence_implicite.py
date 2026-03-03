@@ -16,6 +16,7 @@ with open("resultats", mode="r", newline="") as file:
             dh.append(float(row["dr"]))
         elif argument == "t":
             dh.append(float(row["dt"]))
+            print("here")
         else:
             print(argument)
             print("Missing input argument!")
@@ -29,8 +30,10 @@ with open("resultats", mode="r", newline="") as file:
     print(ordres)
     plt.plot(dh,L2,label="Some shit")
     plt.show()
-
-    text = (f"Ordre de convergence L2 : {ordres[-1]:.7f} \n")
+    string = ""
+    for i in range(len(ordres)):
+        string += f"Ordre de convergence entre les résolutions {i} et {i+1} : {ordres[i]:.7f} \n"
+    text = (string)
 
     plt.figure()
     plt.loglog(dh,L2,"x-", label="L2")
@@ -39,6 +42,6 @@ with open("resultats", mode="r", newline="") as file:
     plt.ylabel("erreur")
     plt.title("Erreur de la solution numérique en fonction de la MMS pour un schéma centré")
     plt.grid("both", ls="--")
-    plt.text(0.3, 0.2, text, fontsize=8, ha='center', va='center', transform=plt.gca().transAxes)
+    plt.text(0.4, 0.75, text, fontsize=8, ha='center', va='center', transform=plt.gca().transAxes)
     plt.show()
 
