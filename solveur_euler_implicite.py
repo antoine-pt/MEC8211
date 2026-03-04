@@ -180,7 +180,9 @@ def solveur_centre(params):
         C_mms_drr = sp.diff(params.mms, r, 2)
         C_mms_dt = sp.diff(params.mms, t)
 
-        source_term = sp.lambdify((r,t) , C_mms_dt - params.D * (C_mms_dr / params._r + C_mms_drr) + params.k * params.mms)
+        source_term = sp.lambdify((r,t) , C_mms_dt - params.D * (C_mms_dr / params._r + C_mms_drr) \
+                                   + params.k * params.mms)
+                                   
         C_mms = sp.lambdify((r,t), params.mms)
         C_mms_dr = sp.lambdify((r,t), C_mms_dr)
 
@@ -237,14 +239,10 @@ if __name__ == "__main__":
     # Définition des paramètres
     nPts = 32
     R = 0.5
-    endTime = 0.1
+    endTime = 4e9
     nTime = 1000
-    # endTime = 4e9
-    # D = 1e-10
-    # k = 4e-09
-
-    D = 1
-    k = 4
+    D = 1e-10
+    k = 4e-09
     Ce = 20
 
     # Création de l'objet params qui contient tous les paramètres
@@ -271,6 +269,8 @@ if __name__ == "__main__":
         ana[t+1,:] = C_mms(params.pos, params.time)
 
 
+## ----- Prints informatifs : -----
+
     print("\n")
     print("L1 =", normeL1(ana, sim, params)[0])
     print("L1Final =", normeL1(ana, sim, params)[1])
@@ -283,35 +283,35 @@ if __name__ == "__main__":
     print("\n")
 
 
+## ----- Solution MMS : -----
 
-    # for i in range(params.nTime-1):
-    #     if i%100 == 0:
-    #         print(i)
-    #         plt.figure()
-    #         plt.plot(params.pos, sim[i,:], "x-", label="solution numérique")
-    #         plt.plot(params.pos, ana[i,:], "o-", label="solution MMS")
-    #         plt.legend()
-    #         plt.xlabel("r")
-    #         plt.ylabel("C(r)")
-    #         plt.title("Comparaison entre la solution manufacturée et la solution analytique pour un schéma centré.")
-    #         plt.grid()
-    #         plt.show()
-    #         # plt.close()
-    # print("L2_final =", L2_final(ana,sim,params))
-    # params.mmsON = False
-    # params.nPts = 11
-    # for t in range(params.nTime):
-    #     sim = solveur_centre(params)
+    plt.figure()
+    plt.plot(params.pos, sim[-1,:], "x-", label="solution numérique")
+    plt.plot(params.pos, ana[-1,:], "o-", label="solution MMS")
+    plt.legend()
+    plt.xlabel("r")
+    plt.ylabel("C(r)")
+    plt.title("Comparaison entre la solution manufacturée et la solution analytique pour un schéma centré.")
+    plt.grid()
+    plt.show()
 
-    # plt.figure()
-    # plt.plot(params.pos, sim, "x-", label="solution numérique")
-    # plt.legend()
-    # plt.xlabel("r")
-    # plt.ylabel("C(r)")
-    # plt.title("Solution numérique du problème de Mme D'AVIGNON pour un schéma centré, 11 points.")
-    # plt.grid()
-    # plt.show()
-    # plt.close()
+
+## ------ Solution Réelle : ------
+
+    params.mmsON = False
+    params.nPts = 11
+    for t in range(params.nTime):
+        sim = solveur_centre(params)
+
+    plt.figure()
+    plt.plot(params.pos, sim, "x-", label="solution numérique")
+    plt.legend()
+    plt.xlabel("r")
+    plt.ylabel("C(r)")
+    plt.title("Solution numérique du problème de Mme D'AVIGNON pour un schéma centré, 11 points.")
+    plt.grid()
+    plt.show()
+    plt.close()
 
 
 
