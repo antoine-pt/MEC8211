@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 
-with open('results_k.csv', 'r') as file:
+with open('devoir3unum/results_k.csv', 'r') as file:
     csvr = csv.reader(file)
     next(csvr)
 
