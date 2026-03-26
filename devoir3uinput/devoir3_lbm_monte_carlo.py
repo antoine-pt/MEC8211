@@ -287,7 +287,7 @@ def LBM(filename, NX, deltaP, dx, d_equivalent):
 if __name__ == "__main__":
 
     result = []
-    nombre_echantillon = 100
+    nombre_echantillon = 10
 
     seed         = 0
     deltaP       = 0.1
@@ -321,7 +321,7 @@ if __name__ == "__main__":
 
     k_min = np.exp(mu - sigma)
     k_max = np.exp(mu + sigma)
-    
+
     # Comme l'incertitude est asymétrique, on prend la plus grande des deux
     u_input = max((k_max - k_med), (k_med - k_min))
 
@@ -354,6 +354,9 @@ if __name__ == "__main__":
     plt.title("PDF de la perméabilité")
     plt.legend()
     plt.grid()
+    plt.savefig('devoir3uinput/pdf_k.png', dpi=300) # Sauvegarde du graphique
+    plt.show()
+    plt.close()
 
     # =========================
     # CDF discrète + théorique
@@ -374,5 +377,6 @@ if __name__ == "__main__":
     plt.title("CDF de la perméabilité")
     plt.legend()
     plt.grid()
-
+    plt.savefig('devoir3uinput/cdf_k.png', dpi=300) # Sauvegarde du graphique
     plt.show()
+    plt.close()
