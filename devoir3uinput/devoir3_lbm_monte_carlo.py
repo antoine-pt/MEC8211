@@ -321,12 +321,16 @@ if __name__ == "__main__":
 
     k_min = np.exp(mu - sigma)
     k_max = np.exp(mu + sigma)
+    
+    # Comme l'incertitude est asymétrique, on prend la plus grande des deux
+    u_input = max((k_max - k_med), (k_med - k_min))
 
     print("\n")
     print("===================================")
     print(f"Médiane : {k_med:.6e}")
     print(f"FVG : {fvg:.6e}")
     print(f"Intervalle 68% : [{k_min:.6e}, {k_max:.6e}]")
+    print(f"Incertitude (u_input) : {u_input:.6e}")
     print("===================================")
 
     # =========================
