@@ -103,6 +103,34 @@ class TestSolveur(unittest.TestCase):
         M = Milieu(prm, T_t, R)
         # Vérifier que la solution obtenue n'est plus constante (il devrait y avoir une variation autour du centre)
         self.assertFalse((M == T_t).all(), "La solution obtenue ne devrait pas être constante M != T_t")
+
+    def testTemperature(self):
+        """Test la fonction Temperature avec des valeurs connues."""
+        # Cas simple
+        prm = Parametres(nr=3, nz=3, dt=1.0)
+        prm.R = 2.0
+        prm.H = 2.0
+        prm.dr = prm.R / (prm.nr - 1)
+        prm.dz = prm.H / (prm.nz - 1)
+        prm.rho = 1.0
+        prm.Cp = 1.0
+        prm.k = 1.0
+        Z, R = Position(prm)
+
+        # On pose T_inf à 1.0 et T_t à 1.0 partout, la solution devrait rester constante à 1.0 partout
+        prm.T_inf = 1.0 # températur de l'environement égale à la température du domaine
+        T_t = np.full((prm.nr, prm.nz), 1.0) # température constante de 1 partout 
+        
+        T = Temperature(prm, T_t, R)
+        # Vérifier que la solution obtenue est plus constante
+        self.assertTrue((T == T_t).all(), "La solution obtenue devrait être constante T == T_t")
+
+        # On change la température de l'environement, la solution devrait changer (évoluer vers 2.0 partout)
+        prm.T_inf = 2.0
+
+        T = Temperature(prm, T_t, R)
+        # Vérifier que la solution obtenue n'est plus constante
+        self.assertFalse((T == T_t).all(), "La solution obtenue ne devrait pas être constante T != T_t")
             
 if __name__ == '__main__':
     unittest.main()
