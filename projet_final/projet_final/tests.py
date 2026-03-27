@@ -81,6 +81,28 @@ class TestSolveur(unittest.TestCase):
         self.assertAlmostEqual(R[0, 0], prm.R, places=5, msg="R[0,0] devrait être prm.R")
         self.assertAlmostEqual(R[-1, 0], 0.0, places=5, msg="R[-1,0] devrait être 0")
 
+    def testMilieu(self):
+        """Test la fonction Milieu avec des valeurs connues."""
+        # Cas simple
+        prm = Parametres(nr=3, nz=3, dt=1.0)
+        prm.R = 2.0
+        prm.H = 2.0
+        prm.dr = prm.R / (prm.nr - 1)
+        prm.dz = prm.H / (prm.nz - 1)
+        prm.rho = 1.0
+        prm.Cp = 1.0
+        prm.k = 1.0
+        Z, R = Position(prm)
+
+        T_t = np.full((prm.nr, prm.nz), 1.0) # température constante de 1 partout 
+        M = milieu(prm, T_t, R)
+        # Vérifier la solution constante obtenue pour le cas simple de T_t constant
+        self.assertEqual(M.all(), T_t.all(), "La solution obtenue devrait être constante M == T_t")
+        
+        T_t[1,1] = 2.0 # on change la température au centre
+        M = milieu(prm, T_t, R)
+        # Vérifier que la solution obtenue n'est plus constante (il devrait y avoir une variation autour du centre)
+        self.assertFalse((M == T_t).all(), "La solution obtenue ne devrait pas être constante M != T_t")
             
 if __name__ == '__main__':
     unittest.main()
