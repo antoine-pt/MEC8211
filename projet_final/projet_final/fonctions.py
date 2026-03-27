@@ -144,7 +144,7 @@ def milieu(prm, T_t,R):
     """
 
     cste = ((prm.k * prm.dt) / (prm.rho * prm.Cp))
-    T_tdt = T_t
+    T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
 
     for r in range(prm.nr):
         for z in range(prm.nz):
