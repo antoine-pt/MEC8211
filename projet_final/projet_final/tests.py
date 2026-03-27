@@ -95,12 +95,12 @@ class TestSolveur(unittest.TestCase):
         Z, R = Position(prm)
 
         T_t = np.full((prm.nr, prm.nz), 1.0) # température constante de 1 partout 
-        M = milieu(prm, T_t, R)
+        M = Milieu(prm, T_t, R)
         # Vérifier la solution constante obtenue pour le cas simple de T_t constant
         self.assertEqual(M.all(), T_t.all(), "La solution obtenue devrait être constante M == T_t")
         
         T_t[1,1] = 2.0 # on change la température au centre
-        M = milieu(prm, T_t, R)
+        M = Milieu(prm, T_t, R)
         # Vérifier que la solution obtenue n'est plus constante (il devrait y avoir une variation autour du centre)
         self.assertFalse((M == T_t).all(), "La solution obtenue ne devrait pas être constante M != T_t")
             

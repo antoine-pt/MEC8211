@@ -124,7 +124,7 @@ def Position(prm):
         
     return z, r
 
-def milieu(prm, T_t,R):
+def Milieu(prm, T_t,R):
     """ Fonction permettant de calculer la température au milieu du cylindre à un instant t+dt.
 
     Entrées:
@@ -178,7 +178,7 @@ def Temperature(prm, T_t,R):
     Sorties (dans l'ordre énuméré ci-bas):
         - T_tdt : Matrice des températures au temps t+dt pour tout le domaine
     """
-    T_tdt = milieu(prm, T_t,R)
+    T_tdt = Milieu(prm, T_t,R)
 
 
     for r in range(prm.nr):
