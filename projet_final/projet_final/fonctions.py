@@ -150,8 +150,9 @@ def Milieu(prm, T_tdt_middle,R):
         for z in range(prm.nz):
 
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
+                dist = R[r,z] - np.min(R)
                 T_tdt[r,z] = cste*((T_tdt_middle[r-1,z]-2*T_tdt_middle[r,z]+T_tdt_middle[r+1,z])/(prm.dr**2)     \
-                                   + (1/(2*prm.dr*R[r,z]))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
+                                   + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
                                     + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
                                           + (T_tdt_middle[r,z])
            
