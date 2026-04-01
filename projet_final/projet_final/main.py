@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # Usage typique du solveur
 
     # Initialisation des parametres
-    prm = Parametres(nr = 30, nz = 30,t_fin = 120 *60, dt = 12)
+    prm = Parametres(nr = 15, nz = 15,t_fin = 120 *60, dt = 1)
     Z, R = Position(prm)    
     t = 0
     T_init = np.full((prm.nr, prm.nz), prm.T_four)

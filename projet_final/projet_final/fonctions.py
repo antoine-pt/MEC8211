@@ -150,7 +150,10 @@ def Milieu(prm, T_t,R):
         for z in range(prm.nz):
 
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
-                T_tdt[r,z] = cste*((T_t[r-1,z]-2*T_t[r,z]+T_t[r+1,z])/(prm.dr**2) + (1/(2*prm.dr*R[r,z]))*(T_t[r-1,z]-T_t[r+1,z]) + (T_t[r,z-1]-2*T_t[r,z]+T_t[r,z+1])/(prm.dz**2)) + (T_t[r,z])
+                T_tdt[r,z] = cste*((T_t[r-1,z]-2*T_t[r,z]+T_t[r+1,z])/(prm.dr**2)     \
+                                   + (1/(2*prm.dr*R[r,z]))*(T_t[r-1,z]-T_t[r+1,z])    \
+                                    + (T_t[r,z-1]-2*T_t[r,z]+T_t[r,z+1])/(prm.dz**2)) \
+                                          + (T_t[r,z])
            
             else:
                 pass
@@ -180,18 +183,32 @@ def Temperature(prm, T_t,R):
     """
     T_tdt = Milieu(prm, T_t,R)
 
-
+    sigma = prm.h * (T_t - prm.T_inf) + \
+            prm.epsilon * prm.sigma * (T_t**4 - prm.T_inf**4)
+    
     for r in range(prm.nr):
         for z in range(prm.nz):
         
-            if r == 0:           
-                T_tdt[r,z] = ((4*T_tdt[r+1, z]-1*T_tdt[r+2, z])/(2*prm.dr)+(prm.h/prm.k)*(prm.T_inf)-(prm.epsilon*prm.sigma/prm.k)*(T_t[r,z]**4-prm.T_inf**4))/(3/(2*prm.dr)+prm.h/prm.k)
+            # if r == 0:           
+            #     T_tdt[r,z] = ((4*T_tdt[r+1, z]-1*T_tdt[r+2, z])/(2*prm.dr)+(prm.h/prm.k)*(prm.T_inf)-(prm.epsilon*prm.sigma/prm.k)*(T_t[r,z]**4-prm.T_inf**4))/(3/(2*prm.dr)+prm.h/prm.k)
         
         
-            elif z == prm.nz-1:
-                T_tdt[r,z] = ((4*T_tdt[r, z-1]-1*T_tdt[r, z-2])/(2*prm.dz)+(prm.h/prm.k)*(prm.T_inf)-(prm.epsilon*prm.sigma/prm.k)*(T_t[r,z]**4-prm.T_inf**4))/(3/(2*prm.dz)+prm.h/prm.k)
+            # elif z == prm.nz-1:
+            #     T_tdt[r,z] = ((4*T_tdt[r, z-1]-1*T_tdt[r, z-2])/(2*prm.dz)+(prm.h/prm.k)*(prm.T_inf)-(prm.epsilon*prm.sigma/prm.k)*(T_t[r,z]**4-prm.T_inf**4))/(3/(2*prm.dz)+prm.h/prm.k)
            
+                        # extrémité supérieure (r=R)
             
+            
+            if r == 0:           
+                T_tdt[r,z] = (1/3) * ( -T_tdt[r+2,z] \
+                                      +  4 * T_tdt[r+1,z] \
+                                        - (2*prm.dr * sigma[r,z] / prm.k) )
+        
+            # extrémité droite (z=H/2)
+            elif z == prm.nz-1:
+                T_tdt[r,z] = (1/3) * ( -T_tdt[r,z-2] \
+                                      +  4 * T_tdt[r,z-1] \
+                                        - (2*prm.dz * sigma[r,z] / prm.k) )
             
             elif r == prm.nr-1:          
                 T_tdt[r, z] = (4/3) * T_tdt[r-1, z] - (1/3) * T_tdt[r-2, z]
