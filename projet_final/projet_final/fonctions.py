@@ -42,7 +42,7 @@ class Parametres:
         self.dt =  dt   # [s] Pas de temps
 
         self.dr = self.R / (self.nr - 1)  # Pas dans la direction r [m]
-        self.dz = self.H / (self.nz - 1)  # Pas dans la direction z [m]
+        self.dz = (self.H/2) / (self.nz - 1)  # Pas dans la direction z [m]
 
         # Vérification du critère de stabilité pour la méthode euler explicite
         print('Vérification du critère de stabilité pour la méthode euler explicite :')
@@ -124,7 +124,7 @@ def Position(prm):
         
     return z, r
 
-def Milieu(prm, T_tdt,R):
+def Milieu(prm, T_tdt_middle,R):
     """ Fonction permettant de calculer la température au milieu du cylindre à un instant t+dt.
 
     Entrées:
@@ -145,15 +145,15 @@ def Milieu(prm, T_tdt,R):
 
     cste = ((prm.k * prm.dt) / (prm.rho * prm.Cp))
     
-
+    T_tdt = T_tdt_middle.copy() # on copie T_tdt_middle pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
     for r in range(prm.nr):
         for z in range(prm.nz):
 
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
-                T_tdt[r,z] = cste*((T_tdt[r-1,z]-2*T_tdt[r,z]+T_tdt[r+1,z])/(prm.dr**2)     \
-                                   + (1/(2*prm.dr*R[r,z]))*(T_tdt[r-1,z]-T_tdt[r+1,z])    \
-                                    + (T_tdt[r,z-1]-2*T_tdt[r,z]+T_tdt[r,z+1])/(prm.dz**2)) \
-                                          + (T_tdt[r,z])
+                T_tdt[r,z] = cste*((T_tdt_middle[r-1,z]-2*T_tdt_middle[r,z]+T_tdt_middle[r+1,z])/(prm.dr**2)     \
+                                   + (1/(2*prm.dr*R[r,z]))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
+                                    + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
+                                          + (T_tdt_middle[r,z])
            
             else:
                 pass
@@ -185,75 +185,39 @@ def Temperature(prm, T_t,R):
     T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
     
 
-    sigma = prm.h * (T_tdt - prm.T_inf) + \
-            prm.epsilon * prm.sigma * (T_tdt**4 - prm.T_inf**4)
+    sigma = prm.h * (T_t - prm.T_inf) + \
+            prm.epsilon * prm.sigma * (T_t**4 - prm.T_inf**4)
     
     for r in range(prm.nr):
         for z in range(prm.nz):
-        
-            # if r == 0:           
-            #     T_tdt[r,z] = ((4*T_tdt[r+1, z]-1*T_tdt[r+2, z])/(2*prm.dr)+(prm.h/prm.k)*(prm.T_inf)-(prm.epsilon*prm.sigma/prm.k)*(T_t[r,z]**4-prm.T_inf**4))/(3/(2*prm.dr)+prm.h/prm.k)
-        
-        
-            # elif z == prm.nz-1:
-            #     T_tdt[r,z] = ((4*T_tdt[r, z-1]-1*T_tdt[r, z-2])/(2*prm.dz)+(prm.h/prm.k)*(prm.T_inf)-(prm.epsilon*prm.sigma/prm.k)*(T_t[r,z]**4-prm.T_inf**4))/(3/(2*prm.dz)+prm.h/prm.k)
-           
-                        # extrémité supérieure (r=R)
             
-            
+            # extrémité supérieure (r=R)
             if r == 0:           
-                T_tdt[r,z] = (1/3) * ( -T_tdt[r+2,z] \
-                                      +  4 * T_tdt[r+1,z] \
+                T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
+                                      +  4 * T_t[r+1,z] \
                                         - (2*prm.dr * sigma[r,z] / prm.k) )
         
             # extrémité droite (z=H/2)
-            elif z == prm.nz-1:
-                T_tdt[r,z] = (1/3) * ( -T_tdt[r,z-2] \
-                                      +  4 * T_tdt[r,z-1] \
+            elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
+                T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
+                                      +  4 * T_t[r,z-1] \
                                         - (2*prm.dz * sigma[r,z] / prm.k) )
+                
+            # extrémité gauche (z=0)
+            elif z == 0 or (z == 0  and r == prm.nr-1):   
+                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
             
-            elif r == prm.nr-1:          
-                T_tdt[r, z] = (4/3) * T_tdt[r-1, z] - (1/3) * T_tdt[r-2, z]
+            # milieu (r = 0)
+            # condition de symmétrie
+            elif r == prm.nr-1:            
+                T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
             
             
             
-            elif z == 0:     
-                T_tdt[r, z] = (4/3) * T_tdt[r, z+1] - (1/3) * T_tdt[r, z+2]
         
-        T_tdt = Milieu(prm, T_tdt,R)
+    T_tdt = Milieu(prm, T_tdt,R)
                 
     return T_tdt
-
-
-def petit_biot(prm, T_t):
-    """ Fonction permettant de calculer la température à un instant t+dt pour un petit nombre de biot.
-
-    Entrées:
-        - prm : Paramètres
-            - prm.h : Coefficient de convection [W/m^2*K] 
-            - prm.epsilon : Emissivité [-] 
-            - prm.sigma : Constante de Stefan-Boltzmann [W/m^2*K^4]
-            - prm.T_inf : Température à l'infini
-            - prm.R : Rayon [m]
-            - prm.H : Hauteur [m]
-            - prm.rho : Densité [kg/m^3]
-            - prm.Cp : Capacité thermique massique [J/kg*K]
-            - prm.dt : Pas de temps [s]
-            
-        - T_t : Température "entre-deux" au temps t
-            
-
-    Sorties (dans l'ordre énuméré ci-bas):
-        - T_tdt : Température à un instant t+dt pour un petit nombre de biot.
-    """
-    
-    cste1 = ((prm.dt * prm.h)  / (prm.rho * prm.Cp )) * ((2*(prm.H+prm.R))/(prm.H * prm.R))
-    cste2 = ((prm.dt * prm.epsilon * prm.sigma) / (prm.rho * prm.Cp)) * ((2*(prm.H+prm.R))/(prm.H * prm.R))
-    
-    T_tdt = T_t - (cste1 * (T_t-prm.T_inf)) - (cste2 * (T_t**4-prm.T_inf**4))
-    
-    return T_tdt
-
 
 
 
