@@ -124,7 +124,7 @@ def Position(prm):
         
     return z, r
 
-def Milieu(prm, T_t,R):
+def Milieu(prm, T_tdt,R):
     """ Fonction permettant de calculer la température au milieu du cylindre à un instant t+dt.
 
     Entrées:
@@ -144,16 +144,16 @@ def Milieu(prm, T_t,R):
     """
 
     cste = ((prm.k * prm.dt) / (prm.rho * prm.Cp))
-    T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
+    
 
     for r in range(prm.nr):
         for z in range(prm.nz):
 
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
-                T_tdt[r,z] = cste*((T_t[r-1,z]-2*T_t[r,z]+T_t[r+1,z])/(prm.dr**2)     \
-                                   + (1/(2*prm.dr*R[r,z]))*(T_t[r-1,z]-T_t[r+1,z])    \
-                                    + (T_t[r,z-1]-2*T_t[r,z]+T_t[r,z+1])/(prm.dz**2)) \
-                                          + (T_t[r,z])
+                T_tdt[r,z] = cste*((T_tdt[r-1,z]-2*T_tdt[r,z]+T_tdt[r+1,z])/(prm.dr**2)     \
+                                   + (1/(2*prm.dr*R[r,z]))*(T_tdt[r-1,z]-T_tdt[r+1,z])    \
+                                    + (T_tdt[r,z-1]-2*T_tdt[r,z]+T_tdt[r,z+1])/(prm.dz**2)) \
+                                          + (T_tdt[r,z])
            
             else:
                 pass
@@ -181,10 +181,12 @@ def Temperature(prm, T_t,R):
     Sorties (dans l'ordre énuméré ci-bas):
         - T_tdt : Matrice des températures au temps t+dt pour tout le domaine
     """
-    T_tdt = Milieu(prm, T_t,R)
 
-    sigma = prm.h * (T_t - prm.T_inf) + \
-            prm.epsilon * prm.sigma * (T_t**4 - prm.T_inf**4)
+    T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
+    
+
+    sigma = prm.h * (T_tdt - prm.T_inf) + \
+            prm.epsilon * prm.sigma * (T_tdt**4 - prm.T_inf**4)
     
     for r in range(prm.nr):
         for z in range(prm.nz):
@@ -217,6 +219,8 @@ def Temperature(prm, T_t,R):
             
             elif z == 0:     
                 T_tdt[r, z] = (4/3) * T_tdt[r, z+1] - (1/3) * T_tdt[r, z+2]
+        
+        T_tdt = Milieu(prm, T_tdt,R)
                 
     return T_tdt
 
