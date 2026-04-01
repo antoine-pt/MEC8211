@@ -119,7 +119,7 @@ class TestSolveur(unittest.TestCase):
     def testSymetrie(self):
         """Test si le solveur fonctionne (si on obtient quelque chose sans erreur)."""
         try:
-            import test_files.functions_sans_symetrie as no_sym
+            import projet_final.projet_final.test_files.fonctions_sans_symetrie as no_sym
         except ImportError:
             print("Error: Could not import the 'functions_symmetry' module. Please ensure it is in the 'test_files' directory.")
             exit(1)
@@ -231,10 +231,45 @@ class TestSolveur(unittest.TestCase):
         relative_error = abs(q_dot_internal + q_dot_out) / (abs(q_dot_out))
         self.assertTrue(relative_error < 1e-3, msg="Le bilan énergétique devrait être proche de zéro (conservation de l'énergie)")
 
-    def testInvarianceGallileenne(self):
-        """Test de l'invariance galiléenne du solveur."""
+    def testInvarianceGalileenne(self):
+        """Test de l'invariance galiléenne du solveur par translation des coordonnées."""
+        try:
+            import test_files.fonctions_translation_coordonnees as translation
+        except ImportError:
+            print("Error: Could not import the 'functions_symmetry' module. Please ensure it is in the 'test_files' directory.")
+            exit(1)
+        t_fin = 20 * 60
+        nr = 5
+        nz = 5
+        ## Calcul de la solution numérique sans condition de symmétrie par rapport à z=0
+        prm_trans = translation.Parametres(nr = nr, nz = nz,t_fin = t_fin, dt = 3)
+        Z_trans, R_trans = translation.Position(prm_trans)  
+        prm = Parametres(nr = nr, nz = nz,t_fin = t_fin, dt = 3)
+        Z, R = Position(prm) 
+        t = 0
+        T_init_trans = np.full((prm_trans.nr, prm_trans.nz), prm_trans.T_four)
+        T_t_trans = T_init_trans
 
+        T_init = np.full((prm.nr, prm.nz), prm.T_four)
+        T_t = T_init
+        while t<prm_trans.t_fin:
 
+            T_tp1_trans = translation.Temperature(prm_trans, T_t_trans, R_trans)
+            T_t_trans = T_tp1_trans
+
+            T_tp1 = Temperature(prm, T_t, R)
+            T_t = T_tp1
+
+            t += prm_trans.dt
+        
+        
+
+        # Vérifier que la solution symétrique est à peu près égale à la solution complète (en tenant compte de la symétrie)
+        norm = np.linalg.norm(T_tp1 - T_tp1_trans, ord = 2)
+        epsilon = 1
+        print(norm)
+        self.assertTrue(norm<epsilon, msg="La solution symétrique devrait être égale ou très proche de la moitié de la solution complète")
+    
     def testOrdreDeConvergenceAvant(self):
         """Test l'odre de convergence pour le schéma avant."""
 
