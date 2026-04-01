@@ -16,14 +16,7 @@ class TestSolveur(unittest.TestCase):
         t = 0
         T_init = np.full((prm.nr, prm.nz), prm.T_four)
         T_t = T_init
-        
-        pourcentage = 5.0
         while t<prm.t_fin:
-            current_pct = (t + prm.dt) / prm.t_fin * 100
-            if current_pct >= pourcentage or (t + prm.dt) >= prm.t_fin:
-                print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
-                while pourcentage <= current_pct:
-                    pourcentage += 5.0
             T_tp1 = Temperature(prm, T_t, R)
             T_t = T_tp1
             t += prm.dt
@@ -160,6 +153,84 @@ class TestSolveur(unittest.TestCase):
         print(norm)
         self.assertTrue(norm<epsilon, msg="La solution symétrique devrait être égale ou très proche de la moitié de la solution complète")
     
+    def testConservationEnergie(self):
+        """Test la conservation de l'énergie du solveur en effectuant un bilan énegérique
+        à l'intérieur du domaine et sur la frontière. On cherche q_dot_intérieur ~= q_dot_frontière"""
+        
+        # ------- Calcul de la solution numérique --------
+        prm = Parametres(nr=10, nz=10, t_fin=10*60, dt=3)
+        Z, R = Position(prm)
+        t = 0
+        T_init = np.full((prm.nr, prm.nz), prm.T_four)
+        T_t = T_init.copy()
+
+        while t < prm.t_fin:
+            t += prm.dt
+            if t >= prm.t_fin:
+                T_tm1 = T_t.copy()
+            T_tp1 = Temperature(prm, T_t, R)
+            T_t = T_tp1
+
+        # ------ Variation d'énergie interne ----------
+        E_prec = 0.0
+        E_fin = 0.0
+        for i in range(prm.nr - 1):
+            for j in range(prm.nz - 1):
+                T_centre_prec = 0.25 * (T_tm1[i,j] + T_tm1[i+1,j] + T_tm1[i,j+1] + T_tm1[i+1,j+1])
+                T_centre_fin  = 0.25 * (T_tp1[i,j] + T_tp1[i+1,j] + T_tp1[i,j+1] + T_tp1[i+1,j+1])
+                
+                # Calcul du volume de la cellule pour un solveur axisymétrique (cylindrique)
+                R_centre = 0.25 * (R[i,j] + R[i+1,j] + R[i,j+1] + R[i+1,j+1])
+                dV = 2 * np.pi * R_centre * prm.dr * prm.dz
+                
+                E_prec += T_centre_prec * dV * prm.rho * prm.Cp
+                E_fin  += T_centre_fin  * dV * prm.rho * prm.Cp
+
+        q_dot_internal = (E_fin - E_prec) / prm.dt
+
+        # ----- Flux sortant aux frontières dissipatives seulement -------
+        q_dot_front_prec = 0.0
+        q_dot_front_fin = 0.0
+
+        # frontière r = r_max  --> r = 0, longueur = dz
+        r = 0
+        for z in range(prm.nz - 1):
+            T_front_prec = 0.5 * (T_tm1[r,z] + T_tm1[r,z+1])
+            T_front_fin  = 0.5 * (T_tp1[r,z] + T_tp1[r,z+1])
+
+            # Calcul de l'aire pour un solveur axisymétrique (cylindrique)
+            R_face = prm.R
+            dA = 2 * np.pi * R_face * prm.dz
+
+            q_dot_front_prec += (prm.h * (T_front_prec - prm.T_inf) +
+                            prm.epsilon * prm.sigma * (T_front_prec**4 - prm.T_inf**4)) * dA
+
+            q_dot_front_fin += (prm.h * (T_front_fin - prm.T_inf) +
+                            prm.epsilon * prm.sigma * (T_front_fin**4 - prm.T_inf**4)) * dA
+
+        # frontière z = z_max --> z = nz-1, longueur = dr
+        z = prm.nz - 1
+        for r in range(prm.nr - 1):
+            T_front_prec = 0.5 * (T_tm1[r,z] + T_tm1[r+1,z])
+            T_front_fin  = 0.5 * (T_tp1[r,z] + T_tp1[r+1,z])
+
+            # Calcul de l'aire pour un solveur axisymétrique (cylindrique)
+            R_face = 0.5 * (R[r,z] + R[r+1,z])
+            dA = 2 * np.pi * R_face * prm.dr
+            
+            q_dot_front_prec += (prm.h * (T_front_prec - prm.T_inf) +
+                            prm.epsilon * prm.sigma * (T_front_prec**4 - prm.T_inf**4)) * dA
+
+            q_dot_front_fin += (prm.h * (T_front_fin - prm.T_inf) +
+                            prm.epsilon * prm.sigma * (T_front_fin**4 - prm.T_inf**4)) * dA
+
+        # Moyenne du flux sortant entre t et t+dt
+        q_dot_out = 0.5 * (q_dot_front_prec + q_dot_front_fin)
+
+        # ------ Test ----------
+        relative_error = abs(q_dot_internal + q_dot_out) / (abs(q_dot_out))
+        self.assertTrue(relative_error < 1e-3, msg="Le bilan énergétique devrait être proche de zéro (conservation de l'énergie)")
+
     def testInvarianceGallileenne(self):
         """Test de l'invariance galiléenne du solveur."""
 
