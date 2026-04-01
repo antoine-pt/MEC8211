@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import matplotlib.pyplot as plt
 try:
     from fonctions import *
 except ImportError:
@@ -30,16 +31,6 @@ class TestSolveur(unittest.TestCase):
         # Vérifier que la solution numérique est proche de la solution analytique
         
         self.assertTrue(T_tp1.all() != None, "La solution numérique est vide!")
-
-    def testInvarianceGallileenne(self):
-        """Test de l'invariance galiléenne du solveur."""
-
-
-    def testOrdreDeConvergenceAvant(self):
-        """Test l'odre de convergence pour le schéma avant."""
-
-    def testOrdreDeConvergenceCentre(self):
-        """Test de l'ordre de convergence pour le solveur avec schéma centré."""
 
     def testPosition(self):
         """Test la fonction Position avec des valeurs connues."""
@@ -131,6 +122,81 @@ class TestSolveur(unittest.TestCase):
         T = Temperature(prm, T_t, R)
         # Vérifier que la solution obtenue n'est plus constante
         self.assertFalse((T == T_t).all(), "La solution obtenue ne devrait pas être constante T != T_t")
-            
+        
+    def testSymetrie(self):
+        """Test si le solveur fonctionne (si on obtient quelque chose sans erreur)."""
+        try:
+            import test_files.functions_sans_symetrie as no_sym
+        except ImportError:
+            print("Error: Could not import the 'functions_symmetry' module. Please ensure it is in the 'test_files' directory.")
+            exit(1)
+
+        t_fin = 60 * 60
+        ## Calcul de la solution numérique sans condition de symmétrie par rapport à z=0
+        prm_full = no_sym.Parametres(nr = 10, nz = 21,t_fin = t_fin, dt = 0.25)
+        Z_full, R_full = no_sym.Position(prm_full)    
+        t = 0
+        T_init_full = np.full((prm_full.nr, prm_full.nz), prm_full.T_four)
+        T_t_full = T_init_full
+        pourcentage = 5.0
+        while t<prm_full.t_fin:
+            current_pct = (t + prm_full.dt) / prm_full.t_fin * 100
+            if current_pct >= pourcentage or (t + prm_full.dt) >= prm_full.t_fin:
+                print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
+                while pourcentage <= current_pct:
+                    pourcentage += 5.0
+            T_tp1_full = no_sym.Temperature(prm_full, T_t_full, R_full)
+            T_t_full = T_tp1_full
+            t += prm_full.dt
+
+        # Affichage de la température finale
+        plt.figure(figsize=(8, 6))
+        plt.contourf(Z_full, R_full, T_tp1_full, levels=50, cmap='inferno')
+        plt.colorbar(label='Température (°C)')
+        plt.title('Distribution de la température dans le cylindre à t = {} s'.format(prm_full.t_fin))
+        plt.xlabel('Position z (m)')
+        plt.ylabel('Position r (m)')
+
+        ## Calcul de la solution numérique avec condition de symmétrie par rapport à z=0
+        prm = Parametres(nr = 10, nz = 11,t_fin = t_fin, dt = 0.25)
+        Z, R = Position(prm)    
+        t = 0
+        T_init_sym = np.full((prm.nr, prm.nz), prm.T_four)
+        T_t_sym = T_init_sym
+        pourcentage = 5.0
+        while t<prm.t_fin:
+            current_pct = (t + prm.dt) / prm.t_fin * 100
+            if current_pct >= pourcentage or (t + prm.dt) >= prm.t_fin:
+                print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
+                while pourcentage <= current_pct:
+                    pourcentage += 5.0
+            T_tp1_sym = Temperature(prm, T_t_sym, R)
+            T_t_sym = T_tp1_sym
+            t += prm.dt
+
+        # Affichage de la température finale
+        plt.figure(figsize=(8, 6))
+        plt.contourf(Z, R, T_tp1_sym, levels=50, cmap='inferno')
+        plt.colorbar(label='Température (°C)')
+        plt.title('Distribution de la température dans le cylindre à t = {} s'.format(prm.t_fin))
+        plt.xlabel('Position z (m)')
+        plt.ylabel('Position r (m)')
+        plt.show()
+
+        # Vérifier que la solution symétrique est à peu près égale à la solution complète (en tenant compte de la symétrie)
+        erreur = np.abs(T_tp1_full[:, prm_full.nz//2:] - T_tp1_sym) # on compare la moitié de la solution complète à la solution symétrique
+        print(erreur)
+        self.assertAlmostEqual(T_t_full[:, prm_full.nz//2:], T_t_sym, decimal=5, msg="La solution symétrique devrait être égale à la moitié de la solution complète")
+        
+    def testInvarianceGallileenne(self):
+        """Test de l'invariance galiléenne du solveur."""
+
+
+    def testOrdreDeConvergenceAvant(self):
+        """Test l'odre de convergence pour le schéma avant."""
+
+    def testOrdreDeConvergenceCentre(self):
+        """Test de l'ordre de convergence pour le solveur avec schéma centré."""          
+
 if __name__ == '__main__':
     unittest.main()
