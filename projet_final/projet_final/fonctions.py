@@ -103,11 +103,9 @@ class Parametres:
 
             self.source = self.rho * self.Cp * self.solution_MMS_diff_t(self.R,self.Z,self.time) - \
                         self.k * self.solution_MMS_diff_diff_r(self.R,self.Z,self.time) - \
-                        self.k * (1/self.Rmax) * self.solution_MMS_diff_r(self.R,self.Z,self.time) - \
+                        self.k * (1/self.R) * self.solution_MMS_diff_r(self.R,self.Z,self.time) - \
                         self.k * self.solution_MMS_diff_diff_z(self.R,self.Z,self.time)
-        
-            #TODO: Pas certain du signe du source, à vérifier
-            self.source = self.source * (1.0) 
+            
             self.MMS = True
             
     def Biot(self):
@@ -122,7 +120,7 @@ class Parametres:
         if self.MMS:
             self.source = self.rho * self.Cp * self.solution_MMS_diff_t(self.R,self.Z,self.time) - \
                 self.k * self.solution_MMS_diff_diff_r(self.R,self.Z,self.time) - \
-                self.k * (1/self.Rmax) * self.solution_MMS_diff_r(self.R,self.Z,self.time) - \
+                self.k * (1/self.R) * self.solution_MMS_diff_r(self.R,self.Z,self.time) - \
                 self.k * self.solution_MMS_diff_diff_z(self.R,self.Z,self.time)
     
 #------------------------------------------------------------------------------
@@ -270,9 +268,7 @@ def Temperature(prm, T_t):
         for r in range(prm.nr):
             for z in range(prm.nz):
 
-                T_hat = prm.solution_MMS(prm.R[r,z], prm.Z[r,z], prm.time)
-                rad_conv = prm.h * (T_hat - prm.T_inf) + \
-                        prm.epsilon * prm.sigma * (T_hat**4 - prm.T_inf**4)
+                T_hat = prm.solution_MMS(prm.R[r,z], prm.Z[r,z], prm.time+prm.dt)
                 
                 # extrémité supérieure (r=Rmax)
                 if r == 0:       
