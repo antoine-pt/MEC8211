@@ -203,28 +203,45 @@ def Temperature(prm, T_t,R):
     
     for r in range(prm.nr):
         for z in range(prm.nz):
+            if not prm.MMS:
+                # extrémité supérieure (r=R)
+                if r == 0:           
+                    T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
+                                        +  4 * T_t[r+1,z] \
+                                            - (2*prm.dr * sigma[r,z] / prm.k) )
             
-            # extrémité supérieure (r=R)
-            if r == 0:           
-                T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
-                                      +  4 * T_t[r+1,z] \
-                                        - (2*prm.dr * sigma[r,z] / prm.k) )
-        
-            # extrémité droite (z=H/2)
-            elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
-                T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
-                                      +  4 * T_t[r,z-1] \
-                                        - (2*prm.dz * sigma[r,z] / prm.k) )
+                # extrémité droite (z=H/2)
+                elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
+                    T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
+                                        +  4 * T_t[r,z-1] \
+                                            - (2*prm.dz * sigma[r,z] / prm.k) )
+                    
+                # extrémité gauche (z=0)
+                elif z == 0 or (z == 0  and r == prm.nr-1):   
+                    T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
                 
-            # extrémité gauche (z=0)
-            elif z == 0 or (z == 0  and r == prm.nr-1):   
-                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+                # milieu (r = 0)
+                # condition de symmétrie
+                elif r == prm.nr-1:            
+                    T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
             
-            # milieu (r = 0)
-            # condition de symmétrie
-            elif r == prm.nr-1:            
-                T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
+            else : 
+                # extrémité supérieure (r=R)
+                if r == 0:           
+                    T_tdt[r,z] = prm.source()
             
+                # extrémité droite (z=H/2)
+                elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
+                    T_tdt[r,z] = prm.source()
+                    
+                # extrémité gauche (z=0)
+                elif z == 0 or (z == 0  and r == prm.nr-1):   
+                    T_tdt[r, z] = prm.source()
+                
+                # milieu (r = 0)
+                # condition de symmétrie
+                elif r == prm.nr-1:            
+                    T_tdt[r, z] = prm.source()
             
             
         
