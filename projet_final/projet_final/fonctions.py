@@ -27,13 +27,14 @@ class Parametres:
         source_sympy = sp.sympify(None)
     ):
 
-        self.R = 0.05      # [m] Rayon
+        self.Rmax = 0.05      # [m] Rayon
         self.H = 0.1     # [m] Hauteur
         self.rho = 2000     # [kg/m^3] Densité
         self.Cp = 1000      # [J/kg*K] Capacité thermique massique
         self.T_inf = 298.15 # [K] Température à l'infini
         self.sigma = 5.670374e-8  # Constante de Stefan-Boltzmann [W/m^2*K^4]
         self.T_four = 800 + 273.15  # Température initiale en Kelvin
+        self.time = 0 # temps initialisé à 0
  
         self.h = h         # [W/m^2*K] Coefficient de convection
         self.epsilon = epsilon  # [-] Emissivité
@@ -43,16 +44,17 @@ class Parametres:
         self.t_fin = t_fin  # [s] Temps d'arrêt de la simulation
         self.dt =  dt   # [s] Pas de temps
 
-        self.dr = self.R / (self.nr - 1)  # Pas dans la direction r [m]
+        self.dr = self.Rmax / (self.nr - 1)  # Pas dans la direction r [m]
         self.dz = (self.H/2) / (self.nz - 1)  # Pas dans la direction z [m]
+
 
         
         if source_sympy is None:
-            self.source_sympy = sp.sympify(0) # source nulle par défaut
+            source_sympy = sp.sympify(0)  # source nulle par défaut
+            self.source = sp.lambdify((sp.symbols('r'), sp.symbols('z'),sp.symbols('t')), source_sympy, 'numpy') # source nulle par défaut
             self.MMS = False
         else:
-            self.source_sympy = source_sympy # par défaut, source nulle.
-            self.source = sp.lambdify((sp.symbols('r'), sp.symbols('z')), self.source_sympy(), 'numpy')
+            self.source = sp.lambdify((sp.symbols('r'), sp.symbols('z'),sp.symbols('t')), source_sympy, 'numpy')
             self.MMS = True
 
         # Vérification du critère de stabilité pour la méthode euler explicite
@@ -83,8 +85,15 @@ class Parametres:
                 print('Continuons avec le dt actuel, mais soyez conscient que cela peut entraîner des résultats instables.')
                 print('')
 
+        # Calcul des matrices de position
+        self.Z, self.R = Position(self)
+
     def Biot(self):
-        return (self.h*2*self.R/self.k)
+        return (self.h*2*self.Rmax/self.k)
+    
+    def Time(self,dt):
+        self.time += dt
+        return self.time
     
 #------------------------------------------------------------------------------
 
@@ -116,7 +125,7 @@ def Position(prm):
                      [0. 1. 2.]
                      [0. 1. 2.]]
     """
-    rvector = np.linspace(0, prm.R, prm.nr)
+    rvector = np.linspace(0, prm.Rmax, prm.nr)
     zvector = np.linspace(0, prm.H/2, prm.nz)
     r = np.zeros([prm.nr, prm.nz])
     
@@ -135,12 +144,12 @@ def Position(prm):
         
     return z, r
 
-def Milieu(prm, T_tdt_middle,R):
+def Milieu(prm, T_tdt_middle):
     """ Fonction permettant de calculer la température au milieu du cylindre à un instant t+dt.
 
     Entrées:
         - prm : Paramètres
-            - prm.R : Rayon [m]
+            - prm.Rmax : Rayon [m]
             - prm.H : Hauteur [m]
             - prm.nr : Nombre de points selon r [-]
             - prm.nz : Nombre de points selon z [-]
@@ -161,12 +170,12 @@ def Milieu(prm, T_tdt_middle,R):
         for z in range(prm.nz):
 
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
-                dist = R[r,z] - np.min(R)
+                dist = prm.R[r,z] - np.min(prm.R)
                 T_tdt[r,z] = cste*((T_tdt_middle[r-1,z]-2*T_tdt_middle[r,z]+T_tdt_middle[r+1,z])/(prm.dr**2)     \
                                 + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
                                 + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
                                 + (T_tdt_middle[r,z]) \
-                                + prm.source(r,z)   
+                                + prm.source(r,z,prm.time)   
            
             else:
                 pass
@@ -175,7 +184,7 @@ def Milieu(prm, T_tdt_middle,R):
     return T_tdt
             
 
-def Temperature(prm, T_t,R):
+def Temperature(prm, T_t):
     """ Fonction permettant de calculer la température aux frontières du domaine à un instant t+dt.
 
     Entrées:
@@ -245,7 +254,7 @@ def Temperature(prm, T_t,R):
             
             
         
-    T_tdt = Milieu(prm, T_tdt,R)
+    T_tdt = Milieu(prm, T_tdt)
                 
     return T_tdt
 
