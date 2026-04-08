@@ -175,7 +175,7 @@ def Milieu(prm, T_tdt_middle):
                                 + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
                                 + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
                                 + (T_tdt_middle[r,z]) \
-                                + prm.source(r,z,prm.time)   
+                                + prm.source(prm.R[r,z], prm.Z[r,z], prm.time)  
            
             else:
                 pass
@@ -235,22 +235,29 @@ def Temperature(prm, T_t):
                     T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
             
             else : 
-                # extrémité supérieure (r=R)
-                if r == 0:           
-                    T_tdt[r,z] = prm.source()
+
+                T_hat = prm.source(prm.R[r,z], prm.Z[r,z], prm.time)
+                rad_conv = prm.h * (T_hat - prm.T_inf) + \
+                        prm.epsilon * prm.sigma * (T_hat**4 - prm.T_inf**4)
+                
+                # extrémité supérieure (r=Rmax)
+                if r == 0:       
+                    diff_r = prm.source.diff(prm.R[r,z], prm.Z[r,z], prm.time, sp.symbols('r'))    
+                    T_tdt[r,z] = rad_conv + diff_r * prm.k
             
                 # extrémité droite (z=H/2)
                 elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
-                    T_tdt[r,z] = prm.source()
+                    diff_z = prm.source.diff(prm.R[r,z], prm.Z[r,z], prm.time, sp.symbols('z'))
+                    T_tdt[r,z] = rad_conv + diff_z * prm.k
                     
                 # extrémité gauche (z=0)
                 elif z == 0 or (z == 0  and r == prm.nr-1):   
-                    T_tdt[r, z] = prm.source()
+                    T_tdt[r, z] = T_hat
                 
                 # milieu (r = 0)
                 # condition de symmétrie
-                elif r == prm.nr-1:            
-                    T_tdt[r, z] = prm.source()
+                elif r == prm.nr-1:   
+                    T_tdt[r, z] = T_hat
             
             
         
