@@ -107,7 +107,7 @@ class Parametres:
                         self.k * self.solution_MMS_diff_diff_z(self.R,self.Z,self.time)
         
             #TODO: Pas certain du signe du source, à vérifier
-            self.source = self.source * (-1.0) 
+            self.source = self.source * (1.0) 
             self.MMS = True
             
     def Biot(self):
@@ -115,7 +115,15 @@ class Parametres:
     
     def Time(self,dt):
         self.time += dt
+        self.update_source_MMS()
         return self.time
+    
+    def update_source_MMS(self):
+        if self.MMS:
+            self.source = self.rho * self.Cp * self.solution_MMS_diff_t(self.R,self.Z,self.time) - \
+                self.k * self.solution_MMS_diff_diff_r(self.R,self.Z,self.time) - \
+                self.k * (1/self.Rmax) * self.solution_MMS_diff_r(self.R,self.Z,self.time) - \
+                self.k * self.solution_MMS_diff_diff_z(self.R,self.Z,self.time)
     
 #------------------------------------------------------------------------------
 
@@ -269,11 +277,11 @@ def Temperature(prm, T_t):
                 # extrémité supérieure (r=Rmax)
                 if r == 0:       
                        
-                    T_tdt[r,z] = rad_conv + prm.solution_MMS_diff_r(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
+                    T_tdt[r,z] = T_hat
             
                 # extrémité droite (z=H/2)
                 elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1): 
-                    T_tdt[r,z] = rad_conv + prm.solution_MMS_diff_z(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
+                    T_tdt[r,z] = T_hat
                     
                 # extrémité gauche (z=0)
                 elif z == 0 or (z == 0  and r == prm.nr-1):   
