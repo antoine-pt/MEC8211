@@ -1,6 +1,7 @@
 # Importation des modules
 import numpy as np
 import sys
+import sympy as sp
 
 # Assignation des paramètres utilisés pour l'analyse
 class Parametres:
@@ -23,6 +24,7 @@ class Parametres:
         h: float = 10.0,
         k: float = 5.0,
         t_fin: float = 71 * 60,
+        source_sympy = sp.sympify(None)
     ):
 
         self.R = 0.05      # [m] Rayon
@@ -43,6 +45,15 @@ class Parametres:
 
         self.dr = self.R / (self.nr - 1)  # Pas dans la direction r [m]
         self.dz = (self.H/2) / (self.nz - 1)  # Pas dans la direction z [m]
+
+        
+        if source_sympy is None:
+            self.source_sympy = sp.sympify(0) # source nulle par défaut
+            self.MMS = False
+        else:
+            self.source_sympy = source_sympy # par défaut, source nulle.
+            self.source = sp.lambdify((sp.symbols('r'), sp.symbols('z')), self.source_sympy(), 'numpy')
+            self.MMS = True
 
         # Vérification du critère de stabilité pour la méthode euler explicite
         print('Vérification du critère de stabilité pour la méthode euler explicite :')
@@ -152,9 +163,10 @@ def Milieu(prm, T_tdt_middle,R):
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
                 dist = R[r,z] - np.min(R)
                 T_tdt[r,z] = cste*((T_tdt_middle[r-1,z]-2*T_tdt_middle[r,z]+T_tdt_middle[r+1,z])/(prm.dr**2)     \
-                                   + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
-                                    + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
-                                          + (T_tdt_middle[r,z])
+                                + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
+                                + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
+                                + (T_tdt_middle[r,z]) \
+                                + prm.source(r,z)   
            
             else:
                 pass
