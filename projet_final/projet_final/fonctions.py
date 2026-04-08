@@ -170,22 +170,24 @@ def Milieu(prm, T_tdt_middle):
     T_tdt = T_tdt_middle.copy() # on copie T_tdt_middle pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
     
     if prm.MMS:
-        T_hat = prm.solution_MMS(prm.R, prm.Z, prm.time)
+        r_var,z_var,t_var = sp.symbols('r z t')
+        symbols = (r_var,z_var,t_var)
 
-        params = (sp.symbols('r'), sp.symbols('z'), sp.symbols('t'))
-        prm.solution_MMS_diff_r = sp.lambdify(params,sp.diff(prm.solution_MMS_sympy, sp.symbols('r')))
-        prm.solution_MMS_diff_diff_r = sp.lambdify(params,sp.diff(prm.solution_MMS_sympy, sp.symbols('r'),2))
-        prm.solution_MMS_diff_diff_z = sp.lambdify(params,sp.diff(prm.solution_MMS_sympy, sp.symbols('r'),2))
-        prm.solution_MMS_diff_t = sp.lambdify(params,sp.diff(prm.solution_MMS_sympy, sp.symbols('t'),1))
+        prm.solution_MMS_diff_r = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, r_var))
+        prm.solution_MMS_diff_diff_r = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, r_var,2))
+        prm.solution_MMS_diff_diff_z = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, z_var,2))
+        prm.solution_MMS_diff_t = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, t_var,1))
 
-        source = prm.rho * prm.Cp * prm.solution_MMS_diff_t - \
-                    prm.k * prm.solution_MMS_diff_diff_r - \
-                    prm.k * (1/prm.Rmax) * prm.solution_MMS_diff_r - \
-                    prm.k * prm.solution_MMS_diff_diff_z
+        source = prm.rho * prm.Cp * prm.solution_MMS_diff_t(prm.R,prm.Z,prm.time) - \
+                    prm.k * prm.solution_MMS_diff_diff_r(prm.R,prm.Z,prm.time) - \
+                    prm.k * (1/prm.Rmax) * prm.solution_MMS_diff_r(prm.R,prm.Z,prm.time) - \
+                    prm.k * prm.solution_MMS_diff_diff_z(prm.R,prm.Z,prm.time)
         
         #TODO: Pas certain du signe du source, à vérifier
         source = source * (-1.0) 
-
+    else :
+        source = np.zeros_like(T_tdt_middle)
+        
     for r in range(prm.nr):
         for z in range(prm.nz):
 
@@ -195,7 +197,7 @@ def Milieu(prm, T_tdt_middle):
                                 + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
                                 + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
                                 + (T_tdt_middle[r,z]) \
-                                + source[r,z]*prm.dt
+                                + source[r,z] * prm.dt / (prm.rho * prm.Cp)
            
             else:
                 pass
@@ -227,34 +229,39 @@ def Temperature(prm, T_t):
     T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
     
 
-    sigma = prm.h * (T_t - prm.T_inf) + \
+
+    if not prm.MMS:
+        conv_rad = prm.h * (T_t - prm.T_inf) + \
             prm.epsilon * prm.sigma * (T_t**4 - prm.T_inf**4)
-    
-    for r in range(prm.nr):
-        for z in range(prm.nz):
-            if not prm.MMS:
-                # extrémité supérieure (r=R)
-                if r == 0:           
-                    T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
-                                        +  4 * T_t[r+1,z] \
-                                            - (2*prm.dr * sigma[r,z] / prm.k) )
-            
-                # extrémité droite (z=H/2)
-                elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
-                    T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
-                                        +  4 * T_t[r,z-1] \
-                                            - (2*prm.dz * sigma[r,z] / prm.k) )
-                    
-                # extrémité gauche (z=0)
-                elif z == 0 or (z == 0  and r == prm.nr-1):   
-                    T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+        
+        for r in range(prm.nr):
+            for z in range(prm.nz):
+                    # extrémité supérieure (r=R)
+                    if r == 0:           
+                        T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
+                                            +  4 * T_t[r+1,z] \
+                                                - (2*prm.dr * conv_rad[r,z] / prm.k) )
                 
-                # milieu (r = 0)
-                # condition de symmétrie
-                elif r == prm.nr-1:            
-                    T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
-            
-            else : 
+                    # extrémité droite (z=H/2)
+                    elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
+                        T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
+                                            +  4 * T_t[r,z-1] \
+                                                - (2*prm.dz * conv_rad[r,z] / prm.k) )
+                        
+                    # extrémité gauche (z=0)
+                    elif z == 0 or (z == 0  and r == prm.nr-1):   
+                        T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+                    
+                    # milieu (r = 0)
+                    # condition de symmétrie
+                    elif r == prm.nr-1:            
+                        T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
+                
+    else : 
+        for r in range(prm.nr):
+            for z in range(prm.nz):
+                r_var,z_var,t_var = sp.symbols('r z t')
+                symbols = (r_var,z_var,t_var)
 
                 T_hat = prm.solution_MMS(prm.R[r,z], prm.Z[r,z], prm.time)
                 rad_conv = prm.h * (T_hat - prm.T_inf) + \
@@ -262,13 +269,13 @@ def Temperature(prm, T_t):
                 
                 # extrémité supérieure (r=Rmax)
                 if r == 0:       
-                    diff_r = prm.solution_MMS_sympy.diff(prm.R[r,z], prm.Z[r,z], prm.time, sp.symbols('r'))    
-                    T_tdt[r,z] = rad_conv + diff_r * prm.k
+                    diff_r = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy,r_var))    
+                    T_tdt[r,z] = rad_conv + diff_r(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
             
                 # extrémité droite (z=H/2)
                 elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
-                    diff_z = prm.solution_MMS_sympy.diff(prm.R[r,z], prm.Z[r,z], prm.time, sp.symbols('z'))
-                    T_tdt[r,z] = rad_conv + diff_z * prm.k
+                    diff_z = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy,z_var))  
+                    T_tdt[r,z] = rad_conv + diff_z(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
                     
                 # extrémité gauche (z=0)
                 elif z == 0 or (z == 0  and r == prm.nr-1):   
