@@ -48,17 +48,6 @@ class Parametres:
         self.dz = (self.H/2) / (self.nz - 1)  # Pas dans la direction z [m]
 
 
-        
-        if solution_MMS_sympy is None:
-            self.solution_MMS_sympy = sp.sympify(0)
-            self.solution_MMS = sp.lambdify((sp.symbols('r'), sp.symbols('z'),sp.symbols('t')), sp.sympify(0) , 'numpy') # source nulle par défaut
-            self.MMS = False
-
-        else:
-            self.solution_MMS_sympy = solution_MMS_sympy
-            self.solution_MMS = sp.lambdify((sp.symbols('r'), sp.symbols('z'),sp.symbols('t')), self.solution_MMS_sympy, 'numpy')
-            self.MMS = True
-
         # Vérification du critère de stabilité pour la méthode euler explicite
         print('Vérification du critère de stabilité pour la méthode euler explicite :')
         cste = ((self.k * self.dt) / (self.rho * self.Cp))
@@ -90,6 +79,37 @@ class Parametres:
         # Calcul des matrices de position
         self.Z, self.R = Position(self)
 
+        # Setting the MMS solution if enabled
+        if solution_MMS_sympy is None:
+            r_var,z_var,t_var = sp.symbols('r z t')
+            symbols = (r_var,z_var,t_var)
+
+            self.solution_MMS_sympy = sp.sympify(0)
+            self.solution_MMS = sp.lambdify((r_var,z_var,t_var), sp.sympify(0) , 'numpy') # source nulle par défaut
+            self.source = np.zeros_like(self.R)
+            self.MMS = False
+
+        else:
+            r_var,z_var,t_var = sp.symbols('r z t')
+            symbols = (r_var,z_var,t_var)
+
+            self.solution_MMS_sympy = solution_MMS_sympy
+            self.solution_MMS = sp.lambdify(symbols, self.solution_MMS_sympy)
+            self.solution_MMS_diff_r = sp.lambdify(symbols,sp.diff(self.solution_MMS_sympy, r_var))
+            self.solution_MMS_diff_z = sp.lambdify(symbols,sp.diff(self.solution_MMS_sympy, z_var))
+            self.solution_MMS_diff_diff_r = sp.lambdify(symbols,sp.diff(self.solution_MMS_sympy, r_var,2))
+            self.solution_MMS_diff_diff_z = sp.lambdify(symbols,sp.diff(self.solution_MMS_sympy, z_var,2))
+            self.solution_MMS_diff_t = sp.lambdify(symbols,sp.diff(self.solution_MMS_sympy, t_var,1))
+
+            self.source = self.rho * self.Cp * self.solution_MMS_diff_t(self.R,self.Z,self.time) - \
+                        self.k * self.solution_MMS_diff_diff_r(self.R,self.Z,self.time) - \
+                        self.k * (1/self.Rmax) * self.solution_MMS_diff_r(self.R,self.Z,self.time) - \
+                        self.k * self.solution_MMS_diff_diff_z(self.R,self.Z,self.time)
+        
+            #TODO: Pas certain du signe du source, à vérifier
+            self.source = self.source * (-1.0) 
+            self.MMS = True
+            
     def Biot(self):
         return (self.h*2*self.Rmax/self.k)
     
@@ -168,26 +188,7 @@ def Milieu(prm, T_tdt_middle):
     cste = ((prm.k * prm.dt) / (prm.rho * prm.Cp))
     
     T_tdt = T_tdt_middle.copy() # on copie T_tdt_middle pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
-    
-    if prm.MMS:
-        r_var,z_var,t_var = sp.symbols('r z t')
-        symbols = (r_var,z_var,t_var)
 
-        prm.solution_MMS_diff_r = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, r_var))
-        prm.solution_MMS_diff_diff_r = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, r_var,2))
-        prm.solution_MMS_diff_diff_z = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, z_var,2))
-        prm.solution_MMS_diff_t = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy, t_var,1))
-
-        source = prm.rho * prm.Cp * prm.solution_MMS_diff_t(prm.R,prm.Z,prm.time) - \
-                    prm.k * prm.solution_MMS_diff_diff_r(prm.R,prm.Z,prm.time) - \
-                    prm.k * (1/prm.Rmax) * prm.solution_MMS_diff_r(prm.R,prm.Z,prm.time) - \
-                    prm.k * prm.solution_MMS_diff_diff_z(prm.R,prm.Z,prm.time)
-        
-        #TODO: Pas certain du signe du source, à vérifier
-        source = source * (-1.0) 
-    else :
-        source = np.zeros_like(T_tdt_middle)
-        
     for r in range(prm.nr):
         for z in range(prm.nz):
 
@@ -197,7 +198,7 @@ def Milieu(prm, T_tdt_middle):
                                 + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
                                 + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
                                 + (T_tdt_middle[r,z]) \
-                                + source[r,z] * prm.dt / (prm.rho * prm.Cp)
+                                + prm.source[r,z] * prm.dt / (prm.rho * prm.Cp)
            
             else:
                 pass
@@ -260,8 +261,6 @@ def Temperature(prm, T_t):
     else : 
         for r in range(prm.nr):
             for z in range(prm.nz):
-                r_var,z_var,t_var = sp.symbols('r z t')
-                symbols = (r_var,z_var,t_var)
 
                 T_hat = prm.solution_MMS(prm.R[r,z], prm.Z[r,z], prm.time)
                 rad_conv = prm.h * (T_hat - prm.T_inf) + \
@@ -269,13 +268,12 @@ def Temperature(prm, T_t):
                 
                 # extrémité supérieure (r=Rmax)
                 if r == 0:       
-                    diff_r = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy,r_var))    
-                    T_tdt[r,z] = rad_conv + diff_r(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
+                       
+                    T_tdt[r,z] = rad_conv + prm.solution_MMS_diff_r(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
             
                 # extrémité droite (z=H/2)
-                elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
-                    diff_z = sp.lambdify(symbols,sp.diff(prm.solution_MMS_sympy,z_var))  
-                    T_tdt[r,z] = rad_conv + diff_z(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
+                elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1): 
+                    T_tdt[r,z] = rad_conv + prm.solution_MMS_diff_z(prm.R[r,z],prm.Z[r,z],prm.time) * prm.k
                     
                 # extrémité gauche (z=0)
                 elif z == 0 or (z == 0  and r == prm.nr-1):   
