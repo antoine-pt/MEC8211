@@ -78,6 +78,7 @@ class Parametres:
 
         # Calcul des matrices de position
         self.Z, self.R = Position(self)
+        self.Rmin = np.min(self.R)
 
         # Setting the MMS solution if enabled
         if solution_MMS_sympy is None:
@@ -293,6 +294,79 @@ def Temperature(prm, T_t):
     T_tdt = Milieu(prm, T_tdt)
                 
     return T_tdt
+
+
+def normeL1(ana, sim, params):
+    """ Calcule la norme L1 entre une solution MMS analytique et une solution
+    numérique en 2D. Norme calculée en temps et espace!
+
+    Args:
+        ana (np.array): solution MMS
+        sim (np.array): solution numérique
+        params: paramètres de la simulation
+
+    Returns:
+        tuple: (L1SpatioTemporel, L1Final) - normes L1 spatio-temporelle et au dernier pas de temps
+    """
+    L1 = 0
+    r_weights = params.R - params.Rmin # valeurs de r (venant du rdr)
+    rayon = params.Rmax-params.Rmin
+    for time in range(ana.shape[0]):
+        weighted_error = np.abs(ana[time,:,:] - sim[time,:,:]) * r_weights
+        L1 += np.sum(weighted_error) * params.dr *params.dz * params.dt
+    
+    # Dernier pas de temps uniquement
+    L1Final = np.sum(weighted_error) * params.dr * params.dz / (rayon * (params.H/2))
+
+    # Sur tous les pas de temps
+    domaine = rayon * (params.H/2) * params.endTime
+    L1SpatioTemporel = L1 / (domaine)
+
+    return L1SpatioTemporel, L1Final
+
+def normeL2(ana, sim, params):
+    """ Calcule la norme L2 entre une solution MMS analytique et une solution
+    numérique en 2D. Norme calculée en temps et espace!
+
+    Args:
+        ana (np.array): solution MMS
+        sim (np.array): solution numérique
+        params: paramètres de la simulation
+
+    Returns:
+        tuple: (L2SpatioTemporel, L2Final) - normes L2 spatio-temporelle et au dernier pas de temps
+    """
+    L2 = 0
+    r_weights = params.R - params.Rmin # valeurs de r (venant du rdr)
+    rayon = params.Rmax-params.Rmin
+    for time in range(ana.shape[0]):
+        error = ana[time,:,:] - sim[time,:,:]
+        weighted_error_sq = error**2 * r_weights
+        L2 += np.sum(weighted_error_sq) * params.dr *params.dz * params.dt
+
+    # Dernier pas de temps uniquement
+    L2Final = np.sqrt(np.sum(weighted_error_sq) * params.dr * params.dz /(rayon * (params.H/2)))
+
+    # Sur tous les pas de temps
+
+    domaine =  rayon * (params.H/2) * params.endTime
+    L2SpatioTemporel = np.sqrt(L2 / (domaine))
+
+    return L2SpatioTemporel, L2Final
+
+def normeLinf(ana, sim):
+    """ Calcule la norme Linf entre une solution MMS analytique et une solution
+    numérique en 2D. Norme calculée en temps et espace!
+
+    Args:
+        ana (np.array): solution MMS
+        sim (np.array): solution numérique
+
+    Returns:
+        float: norme Linf entre les deux solutions
+    """
+
+    return np.max(np.abs(ana - sim))
 
 
 
