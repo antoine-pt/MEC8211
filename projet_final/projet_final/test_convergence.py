@@ -20,21 +20,20 @@ if __name__ == "__main__":
 
     # ---------- Configurations à tester (étude de convergence) -------
     configurations = [
-        {"nr": 5, "nz": 5, "dt": 0.02},
-        {"nr": 10, "nz": 10, "dt": 0.02},
-        {"nr": 25, "nz": 25, "dt": 0.02},
-        {"nr": 50, "nz": 50, "dt": 0.02},
-        {"nr": 100, "nz": 100, "dt": 0.02},
-        {"nr": 15, "nz": 15, "dt": 0.001},
-        {"nr": 15, "nz": 15, "dt": 0.002},
-        {"nr": 15, "nz": 15, "dt": 0.005},
-        {"nr": 15, "nz": 15, "dt": 0.01},
-        {"nr": 15, "nz": 15, "dt": 0.02},
-        {"nr": 15, "nz": 15, "dt": 0.04},
-        {"nr": 15, "nz": 15, "dt": 0.1},
-        {"nr": 15, "nz": 15, "dt": 0.2},
-        {"nr": 15, "nz": 15, "dt": 0.4},
-        {"nr": 15, "nz": 15, "dt": 1.0},
+        {"study_type": "rz", "nr": 5, "nz": 5, "dt": 0.02},
+        {"study_type": "rz", "nr": 10, "nz": 10, "dt": 0.02},
+        {"study_type": "rz", "nr": 25, "nz": 25, "dt": 0.02},
+        {"study_type": "rz", "nr": 50, "nz": 50, "dt": 0.02},
+        {"study_type": "rz", "nr": 100, "nz": 100, "dt": 0.02},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.002},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.005},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.01},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.02},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.04},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.1},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.2},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.4},
+        {"study_type": "t", "nr": 15, "nz": 15, "dt": 1.0},
     ]
 
     # ---------- Dossier de résultats ----------------------------------
@@ -58,13 +57,19 @@ if __name__ == "__main__":
         T_init = np.asarray(prm.solution_MMS(prm.R, prm.Z, 0.0), dtype=float)
         T_t = T_init.copy()
 
-        n_steps = int(prm.t_fin / prm.dt)
+        n_steps = int(round(prm.t_fin / prm.dt))
         T_simu = np.zeros((n_steps, nr, nz))
         T_ana  = np.zeros_like(T_simu)
 
         # ---------- Simulation ----------------------------------------
         timestep = 0
-        while prm.time < prm.t_fin:
+        pourcentage = 5.0
+        while prm.time < prm.t_fin - prm.dt * 0.5: # Pour éviter les problèmes de précision flottante
+            current_pct = (prm.time + prm.dt) / prm.t_fin * 100
+            if current_pct >= pourcentage or (prm.time) >= prm.t_fin:
+                print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
+                while pourcentage <= current_pct:
+                    pourcentage += 5.0
             T_tp1 = Temperature(prm, T_t)
             T_t = T_tp1
             prm.Time(prm.dt)
@@ -94,6 +99,7 @@ if __name__ == "__main__":
             nr     = nr,
             nz     = nz,
             dt     = dt,
+            study_type = config["study_type"]
         )
         print(f"  → Résultats sauvegardés : {filepath}")
 
