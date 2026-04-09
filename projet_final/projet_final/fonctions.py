@@ -319,7 +319,7 @@ def normeL1(ana, sim, params):
     L1Final = np.sum(weighted_error) * params.dr * params.dz / (rayon * (params.H/2))
 
     # Sur tous les pas de temps
-    domaine = rayon * (params.H/2) * params.endTime
+    domaine = rayon * (params.H/2) * params.t_fin
     L1SpatioTemporel = L1 / (domaine)
 
     return L1SpatioTemporel, L1Final
@@ -349,12 +349,12 @@ def normeL2(ana, sim, params):
 
     # Sur tous les pas de temps
 
-    domaine =  rayon * (params.H/2) * params.endTime
+    domaine =  rayon * (params.H/2) * params.t_fin
     L2SpatioTemporel = np.sqrt(L2 / (domaine))
 
     return L2SpatioTemporel, L2Final
 
-def normeLinf(ana, sim):
+def normeLinf(ana, sim,params):
     """ Calcule la norme Linf entre une solution MMS analytique et une solution
     numérique en 2D. Norme calculée en temps et espace!
 
