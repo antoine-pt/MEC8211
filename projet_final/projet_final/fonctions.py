@@ -346,9 +346,8 @@ def normeL2(ana, sim, params):
 
     # Dernier pas de temps uniquement
     L2Final = np.sqrt(np.sum(weighted_error_sq) * params.dr * params.dz /(rayon * (params.H/2)))
-
+    
     # Sur tous les pas de temps
-
     domaine =  rayon * (params.H/2) * params.t_fin
     L2SpatioTemporel = np.sqrt(L2 / (domaine))
 
