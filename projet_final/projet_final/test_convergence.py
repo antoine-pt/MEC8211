@@ -1,6 +1,8 @@
+## Assisté de Claude
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
+import os
 try:
     from fonctions import *
 except ImportError:
@@ -8,52 +10,94 @@ except ImportError:
     exit(1)
 
 if __name__ == "__main__":
-    # Usage typique du solveur
 
     # --------- Initialisation de la solution en MMS ------------------
     t_fin = 60
-    r,z,t = sp.symbols('r z t')
+    r, z, t = sp.symbols('r z t')
     T_ref = 800 + 273.15
     amplitude = 25.0
-    solution_MMS_sympy  = T_ref + amplitude * sp.exp(-t/t_fin) * sp.cos(sp.pi*r/0.05) * sp.cos(sp.pi*z/0.05)
+    solution_MMS_sympy = T_ref + amplitude * sp.exp(-t/t_fin) * sp.cos(sp.pi*r/0.05) * sp.cos(sp.pi*z/0.05)
 
-    # ---------- Initialisation des parametres --------------------------
-    prm = Parametres(nr = 10, nz = 10,t_fin = t_fin, dt = 1, solution_MMS_sympy = solution_MMS_sympy)
-    T_init = np.asarray(prm.solution_MMS(prm.R, prm.Z, 0.0), dtype=float)
-    T_t = T_init.copy()
-    
-    # ---------- Run de la simulation jusqu'au temps final --------------
-    pourcentage = 5.0
-    l2=[]
-    while prm.time<prm.t_fin:
-        current_pct = (prm.time + prm.dt) / prm.t_fin * 100
-        if current_pct >= pourcentage or (prm.time) >= prm.t_fin:
-            print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
-            while pourcentage <= current_pct:
-                pourcentage += 5.0
-        T_tp1 = Temperature(prm, T_t)
-        T_t = T_tp1
-        T_t_exact = np.asarray(prm.solution_MMS(prm.R, prm.Z, prm.time+prm.dt), dtype=float)
-        error_t = T_tp1 - T_t_exact
-        l2_error_t = np.sqrt(np.mean(error_t ** 2))
-        l2.append(l2_error_t)
-        prm.Time(prm.dt)
+    # ---------- Configurations à tester (étude de convergence) -------
+    configurations = [
+        {"nr": 5, "nz": 5, "dt": 0.02},
+        {"nr": 10, "nz": 10, "dt": 0.02},
+        {"nr": 25, "nz": 25, "dt": 0.02},
+        {"nr": 50, "nz": 50, "dt": 0.02},
+        {"nr": 100, "nz": 100, "dt": 0.02},
+        {"nr": 15, "nz": 15, "dt": 0.001},
+        {"nr": 15, "nz": 15, "dt": 0.002},
+        {"nr": 15, "nz": 15, "dt": 0.005},
+        {"nr": 15, "nz": 15, "dt": 0.01},
+        {"nr": 15, "nz": 15, "dt": 0.02},
+        {"nr": 15, "nz": 15, "dt": 0.04},
+        {"nr": 15, "nz": 15, "dt": 0.1},
+        {"nr": 15, "nz": 15, "dt": 0.2},
+        {"nr": 15, "nz": 15, "dt": 0.4},
+        {"nr": 15, "nz": 15, "dt": 1.0},
+    ]
 
-    # ----- Comparaison à la solution exacte de MMS au dernier pas de temps -----
-    T_exact_final = np.asarray(prm.solution_MMS(prm.R, prm.Z, prm.time), dtype=float)
-    error_final = T_t - T_exact_final
+    # ---------- Dossier de résultats ----------------------------------
+    # Dossier du script courant
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    l1_error = np.mean(np.abs(error_final))
-    l2_error = np.sqrt(np.mean(error_final ** 2))
+    # Dossier "resultats" au même niveau que le script
+    results_dir = os.path.join(script_dir, "resultats")
+    os.makedirs(results_dir, exist_ok=True)
 
-    print("Erreur L1 au dernier pas de temps : {:.6e} K".format(l1_error))
-    print("Erreur L2 au dernier pas de temps : {:.6e} K".format(l2_error))
-    print(l2)
+    # ---------- Boucle sur les configurations -------------------------
+    for config in configurations:
+        nr   = config["nr"]
+        nz   = config["nz"]
+        dt   = config["dt"]
 
+        print(f"\nSimulation : nr={nr}, nz={nz}, dt={dt}")
 
+        # ---------- Initialisation ------------------------------------
+        prm = Parametres(nr=nr, nz=nz, t_fin=t_fin, dt=dt, solution_MMS_sympy=solution_MMS_sympy)
+        T_init = np.asarray(prm.solution_MMS(prm.R, prm.Z, 0.0), dtype=float)
+        T_t = T_init.copy()
 
+        n_steps = int(prm.t_fin / prm.dt)
+        T_simu = np.zeros((n_steps, nr, nz))
+        T_ana  = np.zeros_like(T_simu)
 
-    # -------- Plot des graphiques --------------------------------------------
+        # ---------- Simulation ----------------------------------------
+        timestep = 0
+        while prm.time < prm.t_fin:
+            T_tp1 = Temperature(prm, T_t)
+            T_t = T_tp1
+            prm.Time(prm.dt)
+
+            T_simu[timestep, :, :] = T_tp1
+            T_ana[timestep, :, :]  = np.asarray(
+                prm.solution_MMS(prm.R, prm.Z, prm.time), dtype=float
+            )
+            timestep += 1
+
+        # ---------- Sauvegarde des résultats --------------------------
+        # Vecteurs r et z (axes spatiaux)
+        r_vec = prm.R[:, 0]   # shape (nr,)  — 1ère colonne de la grille R
+        z_vec = prm.Z[0, :]   # shape (nz,)  — 1ère ligne   de la grille Z
+        t_vec = np.arange(1, n_steps + 1) * dt   # shape (n_steps,)
+
+        filename = f"nr{nr}_nz{nz}_dt{str(dt).replace('.', 'p')}.npz"
+        filepath = os.path.join(results_dir, filename)
+
+        np.savez(
+            filepath,
+            T_simu = T_simu,   # (n_steps, nr, nz)
+            T_ana  = T_ana,    # (n_steps, nr, nz)
+            t      = t_vec,    # (n_steps,)
+            r      = r_vec,    # (nr,)
+            z      = z_vec,    # (nz,)
+            nr     = nr,
+            nz     = nz,
+            dt     = dt,
+        )
+        print(f"  → Résultats sauvegardés : {filepath}")
+
+    print("\nToutes les simulations sont terminées.")
 
 
 
