@@ -364,8 +364,9 @@ def normeLinf(ana, sim,params):
     Returns:
         float: norme Linf entre les deux solutions
     """
-
-    return np.max(np.abs(ana - sim))
+    LinfSpatioTemporel = np.max(np.abs(ana - sim))
+    LinfFinal = np.max(np.abs(ana[-1,:,:] - sim[-1,:,:]))
+    return LinfSpatioTemporel, LinfFinal
 
 
 
