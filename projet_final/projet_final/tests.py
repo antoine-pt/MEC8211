@@ -114,7 +114,8 @@ class TestSolveur(unittest.TestCase):
         self.assertFalse((T == T_t).all(), "La solution obtenue ne devrait pas être constante T != T_t")
         
     def testSymetrie(self):
-        """Test si le solveur fonctionne (si on obtient quelque chose sans erreur)."""
+        """Test la simplification de la condition de symétrie en comparant 
+        le résultat symétrique au résultat du domaine complet."""
         try:
             from .test_files import fonctions_sans_symetrie as no_sym
         except ImportError:
