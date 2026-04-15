@@ -173,7 +173,7 @@ def Position(prm):
         
     return z, r
 
-def Milieu(prm, T_tdt_middle):
+def Milieu(prm, T_tdt, T_t):
     """ Fonction permettant de calculer la température au milieu du cylindre à un instant t+dt.
 
     Entrées:
@@ -193,18 +193,16 @@ def Milieu(prm, T_tdt_middle):
     """
 
     cste = ((prm.k * prm.dt) / (prm.rho * prm.Cp))
-    
-    T_tdt = T_tdt_middle.copy() # on copie T_tdt_middle pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
 
     for r in range(prm.nr):
         for z in range(prm.nz):
 
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
                 dist = prm.R[r,z] - np.min(prm.R)
-                T_tdt[r,z] = cste*((T_tdt_middle[r-1,z]-2*T_tdt_middle[r,z]+T_tdt_middle[r+1,z])/(prm.dr**2)     \
-                                + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
-                                + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
-                                + (T_tdt_middle[r,z]) \
+                T_tdt[r,z] = cste*((T_t[r-1,z]-2*T_t[r,z]+T_t[r+1,z])/(prm.dr**2)     \
+                                + (1/(2*prm.dr*dist))*(T_t[r-1,z]-T_t[r+1,z])    \
+                                + (T_t[r,z-1]-2*T_t[r,z]+T_t[r,z+1])/(prm.dz**2)) \
+                                + (T_t[r,z]) \
                                 + prm.source[r,z] * prm.dt / (prm.rho * prm.Cp)
            
             else:
@@ -291,7 +289,7 @@ def Temperature(prm, T_t):
             
             
         
-    T_tdt = Milieu(prm, T_tdt)
+    T_tdt = Milieu(prm, T_tdt, T_t)
                 
     return T_tdt
 
