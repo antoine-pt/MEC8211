@@ -233,8 +233,9 @@ def Temperature(prm, T_t):
     """
 
     T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
-    
+    T_tdt = Milieu(prm, T_tdt, T_t)
 
+    corners = [(0,0), (0,prm.nz-1), (prm.nr-1,0), (prm.nr-1, prm.nz-1)]
 
     if not prm.MMS:
         conv_rad = prm.h * (T_t - prm.T_inf) + \
@@ -242,54 +243,117 @@ def Temperature(prm, T_t):
         
         for r in range(prm.nr):
             for z in range(prm.nz):
+                    
+                    if (r,z) in corners:
+                        continue 
+
                     # extrémité supérieure (r=R)
-                    if r == 0:           
+                    elif r == 0:           
                         T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
                                             +  4 * T_t[r+1,z] \
                                                 - (2*prm.dr * conv_rad[r,z] / prm.k) )
                 
                     # extrémité droite (z=H/2)
-                    elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
+                    elif z == prm.nz-1:
                         T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
                                             +  4 * T_t[r,z-1] \
                                                 - (2*prm.dz * conv_rad[r,z] / prm.k) )
                         
                     # extrémité gauche (z=0)
-                    elif z == 0 or (z == 0  and r == prm.nr-1):   
+                    elif z == 0:   
                         T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
                     
                     # milieu (r = 0)
                     # condition de symmétrie
                     elif r == prm.nr-1:            
                         T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
+                    # On force les coins
+
+        for element in corners:
+            r,z = element 
+
+            # TOP LEFT, Neumann 
+            if (r,z) == (0,0):           
+                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+            
+            # TOP RIGHT, Robin
+            if (r,z) == (0,prm.nz-1):
+
+                T_tdt_r = (1/3) * ( -T_t[r+2,z] \
+                                +  4 * T_t[r+1,z] \
+                                    - (2*prm.dr * conv_rad[r,z] / prm.k) )
+                
+                T_tdt_z = (1/3) * ( -T_t[r,z-2] \
+                                +  4 * T_t[r,z-1] \
+                                - (2*prm.dz * conv_rad[r,z] / prm.k) )
+                
+                T_tdt[r,z] = (T_tdt_r + T_tdt_z) / 2
+
+            # BOTTOM LEFT, Neuman
+            if (r,z) == (prm.nr-1,0):
+                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+            
+            # BOTTOM RIGHT, Neumann
+            if (r,z) == (prm.nr-1,prm.nz-1):
+                T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
                 
     else : 
+
         for r in range(prm.nr):
             for z in range(prm.nz):
 
+
                 T_hat = prm.solution_MMS(prm.R[r,z], prm.Z[r,z], prm.time+prm.dt)
-                
+                T_t = T_tdt
                 # extrémité supérieure (r=Rmax)
-                if r == 0:       
-                       
-                    T_tdt[r,z] = T_hat
+
+                if (r,z) in corners:
+                    continue 
+
+                elif r == 0:       
+                    g = prm.solution_MMS_diff_r(prm.R[r,z], prm.Z[r,z], prm.time+prm.dt)
+                    T_tdt[r, z] = (4/3) * T_t[r+1, z] - (1/3) * T_t[r+2, z] + g * 2 * prm.dr / 3
             
                 # extrémité droite (z=H/2)
-                elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1): 
-                    T_tdt[r,z] = T_hat
+                elif z == prm.nz-1: 
+                    g = prm.solution_MMS_diff_z(prm.R[r,z], prm.Z[r,z], prm.time+prm.dt)
+                    T_tdt[r, z] = (4/3) * T_t[r, z-1] - (1/3) * T_t[r, z-2] + g * 2 * prm.dz / 3
                     
                 # extrémité gauche (z=0)
-                elif z == 0 or (z == 0  and r == prm.nr-1):   
-                    T_tdt[r, z] = T_hat
+                elif z == 0:   
+                    T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
                 
                 # milieu (r = 0)
                 # condition de symmétrie
                 elif r == prm.nr-1:   
-                    T_tdt[r, z] = T_hat
+                    T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
+        
+        # On force les coins
+        for element in corners:
+            r,z = element 
+
+            # TOP LEFT, Neumann 
+            if (r,z) == (0,0):           
+                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
             
+            # TOP RIGHT, Robin
+            if (r,z) == (0,prm.nz-1):
+                gr = prm.solution_MMS_diff_r(prm.R[r,z], prm.Z[r,z], prm.time+prm.dt)
+                gz = prm.solution_MMS_diff_z(prm.R[r,z], prm.Z[r,z], prm.time+prm.dt)
+                T_tdt_r = (4/3) * T_t[r+1, z] - (1/3) * T_t[r+2, z] + gr * 2 * prm.dr / 3
+                T_tdt_z = (4/3) * T_t[r, z-1] - (1/3) * T_t[r, z-2] + gz * 2 * prm.dz / 3
+                T_tdt[r,z] = (T_tdt_r + T_tdt_z) / 2
+
+            # BOTTOM LEFT, Neuman
+            if (r,z) == (prm.nr-1,0):
+                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+            
+            # BOTTOM RIGHT, Neumann
+            if (r,z) == (prm.nr-1,prm.nz-1):
+                T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
             
         
-    T_tdt = Milieu(prm, T_tdt, T_t)
+    
                 
     return T_tdt
 
