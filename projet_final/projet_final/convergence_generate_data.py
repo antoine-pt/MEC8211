@@ -20,20 +20,20 @@ if __name__ == "__main__":
 
     # ---------- Configurations à tester (étude de convergence) -------
     configurations = [
-        {"study_type": "rz", "nr": 5, "nz": 5, "dt": 0.02},
-        {"study_type": "rz", "nr": 10, "nz": 10, "dt": 0.02},
-        {"study_type": "rz", "nr": 25, "nz": 25, "dt": 0.02},
-        {"study_type": "rz", "nr": 50, "nz": 50, "dt": 0.02},
-        {"study_type": "rz", "nr": 100, "nz": 100, "dt": 0.02},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.002},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.005},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.01},
+        {"study_type": "rz", "nr": 5, "nz": 5, "dt": 0.01},
+        {"study_type": "rz", "nr": 10, "nz": 10, "dt": 0.01},
+        {"study_type": "rz", "nr": 15, "nz": 15, "dt": 0.01},
+        {"study_type": "rz", "nr": 20, "nz": 20, "dt": 0.01},
+        {"study_type": "rz", "nr": 25, "nz": 25, "dt": 0.01},
+        {"study_type": "rz", "nr": 30, "nz": 30, "dt": 0.01},
+        {"study_type": "rz", "nr": 50, "nz": 50, "dt": 0.01},
         {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.02},
         {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.04},
         {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.1},
         {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.2},
         {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.4},
         {"study_type": "t", "nr": 15, "nz": 15, "dt": 1.0},
+
     ]
 
     # ---------- Dossier de résultats ----------------------------------
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         print(f"\nSimulation : nr={nr}, nz={nz}, dt={dt}")
 
         # ---------- Initialisation ------------------------------------
-        prm = Parametres(nr=nr, nz=nz, t_fin=t_fin, dt=dt, solution_MMS_sympy=solution_MMS_sympy)
+        prm = Parametres(nr=nr, nz=nz, t_fin=t_fin, dt=dt, epsilon = 0.0, solution_MMS_sympy=solution_MMS_sympy)
         T_init = np.asarray(prm.solution_MMS(prm.R, prm.Z, 0.0), dtype=float)
         T_t = T_init.copy()
 
