@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 try:
     from fonctions import *
 except ImportError:
@@ -8,34 +7,38 @@ except ImportError:
     exit(1)
 
 if __name__ == "__main__":
-    # Usage typique du solveur
 
-    # # Initialisation des parametres
-    # prm = Parametres(nr = 15, nz = 15,t_fin = 30 *60, dt = 1)
-    # T_init = np.full((prm.nr, prm.nz), prm.T_four)
-    # T_t = T_init
+    ## ============ Usage typique du solveur ========================
+
+    # Initialisation des parametres
+    prm = Parametres(nr = 15, nz = 15,t_fin = 30 *60, dt = 1)
+    T_init = np.full((prm.nr, prm.nz), prm.T_four)
+    T_t = T_init
     
-    # pourcentage = 5.0
-    # while prm.time<prm.t_fin:
-    #     current_pct = (prm.time + prm.dt) / prm.t_fin * 100
-    #     if current_pct >= pourcentage or (prm.time) >= prm.t_fin:
-    #         print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
-    #         while pourcentage <= current_pct:
-    #             pourcentage += 5.0
-    #     T_tp1 = Temperature(prm, T_t)
-    #     T_t = T_tp1
-    #     prm.Time(prm.dt)
+    pourcentage = 5.0
+    while prm.time<prm.t_fin:
+        current_pct = (prm.time + prm.dt) / prm.t_fin * 100
+        if current_pct >= pourcentage or (prm.time) >= prm.t_fin:
+            print("Pourcentage de complétion : {}%".format(round(current_pct, 2)))
+            while pourcentage <= current_pct:
+                pourcentage += 5.0
+        T_tp1 = Temperature(prm, T_t)
+        T_t = T_tp1
+        prm.Time(prm.dt)
 
-    # # Affichage de la température finale
-    # plt.figure(figsize=(8, 6))
-    # plt.contourf(prm.Z, prm.R, T_t, levels=50, cmap='inferno')
-    # plt.colorbar(label='Température (°C)')
-    # plt.title('Distribution de la température dans le cylindre à t = {} s'.format(prm.t_fin))
-    # plt.xlabel('Position z (m)')
-    # plt.ylabel('Position r (m)')
-    # plt.show()
+    # Affichage de la température finale
+    plt.figure(figsize=(8, 6))
+    plt.contourf(prm.Z, prm.R, T_t, levels=50, cmap='inferno')
+    plt.colorbar(label='Température (°C)')
+    plt.title('Distribution de la température dans le cylindre à t = {} s'.format(prm.t_fin))
+    plt.xlabel('Position z (m)')
+    plt.ylabel('Position r (m)')
+    plt.show()
+
+    ## ============= Fin Usage Typique du Solveur ======================
 
     ## ================== MMS Solution =================================
+
     # --------- Initialisation de la solution en MMS ------------------
     t_fin = 60
     r, z, t = sp.symbols('r z t')
@@ -44,8 +47,8 @@ if __name__ == "__main__":
     solution_MMS_sympy = T_ref + amplitude * sp.exp(-t/t_fin) * sp.cos(sp.pi*r/0.05) * sp.cos(sp.pi*z/0.05)
 
     # Initialisation des parametres
-    nr = 50
-    nz = 50
+    nr = 20
+    nz = 20
     dt = 0.01
     prm = Parametres(nr=nr, nz=nz, t_fin=t_fin, dt=dt, epsilon = 0.0, solution_MMS_sympy=solution_MMS_sympy)
     T_init = np.asarray(prm.solution_MMS(prm.R, prm.Z, 0.0), dtype=float)
@@ -86,17 +89,13 @@ if __name__ == "__main__":
     print(f"Norme L∞ (spatio-temporel) : {Linf:.4e}, (final) : {Linf_final:.4e}")
 
     # ---------- Plots ---------------------------------------------
-    import matplotlib.pyplot as plt
 
     # in case timestep < n_steps
     T_ana_plot = T_ana[:timestep]
     T_simu_plot = T_simu[:timestep]
     T_diff_plot = T_simu_plot - T_ana_plot
 
-    # choose which time index to display
-    # it = timestep - 10          # final time
-    # it = 1                   # first time step
-    # it = timestep // 2       # middle time
+    # displays 10 snapshots evenly spaced in time
     for i in range(1,100,10):
         it = int(i/100 * timestep)
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
@@ -105,9 +104,7 @@ if __name__ == "__main__":
         vmax = max(T_ana_plot[it].max(), T_simu_plot[it].max())
         diff_abs = np.max(np.abs(T_diff_plot[it]))
 
-        # cf1 = axes[0].contourf(prm.Z, prm.R, T_ana_plot[it], levels=50, cmap='inferno', vmin=vmin, vmax=vmax)
-        # cf2 = axes[1].contourf(prm.Z, prm.R, T_simu_plot[it], levels=50, cmap='inferno', vmin=vmin, vmax=vmax)
-        # cf3 = axes[2].contourf(prm.Z, prm.R, T_diff_plot[it], levels=50, cmap='RdBu_r', vmin=-diff_abs, vmax=diff_abs)
+
         cf1 = axes[0].pcolormesh(prm.Z, prm.R, T_ana_plot[it], cmap='inferno', vmin=vmin, vmax=vmax, shading='auto')
         cf2 = axes[1].pcolormesh(prm.Z, prm.R, T_simu_plot[it], cmap='inferno', vmin=vmin, vmax=vmax, shading='auto')
         cf3 = axes[2].pcolormesh(prm.Z, prm.R, T_diff_plot[it], cmap='RdBu_r', vmin=-diff_abs, vmax=diff_abs, shading='auto')
@@ -126,3 +123,5 @@ if __name__ == "__main__":
 
         plt.tight_layout()
         plt.show()
+
+    ## ================== Fin MMS Solution =============================
