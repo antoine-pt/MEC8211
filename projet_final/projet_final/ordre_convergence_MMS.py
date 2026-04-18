@@ -11,7 +11,7 @@ except ImportError:
 
 if __name__ == "__main__":
 
-    study_type = "rz"  # "rz" ou "t" selon le type d'étude
+    study_type = input("Entrez 'rz' pour étude de convergence en fonction de la discrétisation spatiale, ou 't' pour étude de convergence en fonction du pas de temps : ").strip().lower()
 
     results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resultats")
     files_npz = sorted([f for f in os.listdir(results_dir) if f.endswith(".npz")])
@@ -55,8 +55,15 @@ if __name__ == "__main__":
 
     def convergence_order(params, errors, n_fit=3):
         """Calcule l'ordre de convergence sur les n_fit plus grandes discrétisations."""
-        p = params[:n_fit]
-        e = errors[:n_fit]
+        if study_type == "rz":
+            print(f"Calcul de l'ordre de convergence en fonction de la discrétisation spatiale de debut:{n_fit}")
+            p = params[:n_fit]
+            e = errors[:n_fit]
+        else:
+            print(f"Calcul de l'ordre de convergence en fonction du pas de temps de -{n_fit}:fin")
+            p = params[-n_fit:]
+            e = errors[-n_fit:]
+            
         coeffs = np.polyfit(np.log(p), np.log(e), 1)
         fit_full = np.exp(np.polyval(coeffs, np.log(params)))  # fit sur tous les points pour affichage
         return coeffs[0], fit_full
