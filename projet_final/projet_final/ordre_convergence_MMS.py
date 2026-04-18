@@ -11,7 +11,7 @@ except ImportError:
 
 if __name__ == "__main__":
 
-    study_type = "t"  # ou "t" selon le type d'étude
+    study_type = "rz"  # "rz" ou "t" selon le type d'étude
 
     results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resultats")
     files_npz = sorted([f for f in os.listdir(results_dir) if f.endswith(".npz")])
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     for file in files_npz:
         data = np.load(os.path.join(results_dir, file))
-
+        print(file)
         if str(data["study_type"]) != study_type:
             continue
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         L1_st_list.append(L1_st);  L1_f_list.append(L1_f)
         L2_st_list.append(L2_st);  L2_f_list.append(L2_f)
         Li_st_list.append(Li_st);  Li_f_list.append(Li_f)
-        cell_size_list.append(np.sqrt(prm.dr**2 + prm.dz**2) if study_type == "rz" else prm.dt)
+        cell_size_list.append(np.sqrt(prm.dr * prm.dz) if study_type == "rz" else prm.dt)
 
     # Trier par paramètre croissant
     idx        = np.argsort(cell_size_list)
@@ -55,8 +55,8 @@ if __name__ == "__main__":
 
     def convergence_order(params, errors, n_fit=3):
         """Calcule l'ordre de convergence sur les n_fit plus grandes discrétisations."""
-        p = params[-n_fit:]
-        e = errors[-n_fit:]
+        p = params[:n_fit]
+        e = errors[:n_fit]
         coeffs = np.polyfit(np.log(p), np.log(e), 1)
         fit_full = np.exp(np.polyval(coeffs, np.log(params)))  # fit sur tous les points pour affichage
         return coeffs[0], fit_full
