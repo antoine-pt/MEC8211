@@ -27,12 +27,13 @@ if __name__ == "__main__":
         {"study_type": "rz", "nr": 25, "nz": 25, "dt": 0.01},
         {"study_type": "rz", "nr": 30, "nz": 30, "dt": 0.01},
         {"study_type": "rz", "nr": 50, "nz": 50, "dt": 0.01},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.02},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.04},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.1},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.2},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 0.4},
-        {"study_type": "t", "nr": 15, "nz": 15, "dt": 1.0},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.25},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.30},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.35},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.40},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.41},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.42},
+        {"study_type": "t", "nr": 25, "nz": 25, "dt": 0.43},
 
     ]
 
@@ -86,7 +87,11 @@ if __name__ == "__main__":
         z_vec = prm.Z[0, :]   # shape (nz,)  — 1ère ligne   de la grille Z
         t_vec = np.arange(1, n_steps + 1) * dt   # shape (n_steps,)
 
-        filename = f"nr{nr}_nz{nz}_dt{str(dt).replace('.', 'p')}.npz"
+        if config["study_type"] == "rz":
+            filename = f"rz_nr{nr}_nz{nz}_dt{str(dt).replace('.', 'p')}.npz"
+        else:
+            filename = f"t_nr{nr}_nz{nz}_dt{str(dt).replace('.', 'p')}.npz"
+
         filepath = os.path.join(results_dir, filename)
 
         np.savez(
