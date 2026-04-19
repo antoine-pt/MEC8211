@@ -9,7 +9,19 @@ except ImportError:
     exit(1)
 
 if __name__ == "__main__":
-    # Usage typique du solveur
+    """
+    Script de vérification de convergence numérique (GCI) pour un solveur thermique.
+
+    Ce script exécute plusieurs simulations en faisant varier le pas de temps (dt)
+    et la résolution du maillage (nr, nz). Les solutions obtenues sont comparées
+    à l'aide d'une norme L2 afin d'évaluer l'erreur entre maillages grossiers et fins.
+
+    Le Grid Convergence Index (GCI) est calculé pour chaque paramètre (temps,
+    direction radiale et axiale), puis combiné pour estimer l'incertitude numérique
+    globale (U_num).
+
+    Objectif : quantifier la convergence et l'erreur numérique du solveur.
+    """
 
     # Initialisation des parametres
     nr=[15, 30]
