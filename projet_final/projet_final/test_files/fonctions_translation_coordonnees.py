@@ -132,7 +132,7 @@ def Position(prm):
         
     return z, r
 
-def Milieu(prm, T_tdt_middle):
+def Milieu(prm, T_tdt, T_t):
     """ Fonction permettant de calculer la température au milieu du cylindre à un instant t+dt.
 
     Entrées:
@@ -153,16 +153,15 @@ def Milieu(prm, T_tdt_middle):
 
     cste = ((prm.k * prm.dt) / (prm.rho * prm.Cp))
     
-    T_tdt = T_tdt_middle.copy() # on copie T_tdt_middle pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
     for r in range(prm.nr):
         for z in range(prm.nz):
             
             if r != 0 and z != 0 and r != prm.nr-1 and z != prm.nz-1: 
                 dist = prm.R[r,z] - np.min(prm.R)
-                T_tdt[r,z] = cste*((T_tdt_middle[r-1,z]-2*T_tdt_middle[r,z]+T_tdt_middle[r+1,z])/(prm.dr**2)     \
-                                   + (1/(2*prm.dr*dist))*(T_tdt_middle[r-1,z]-T_tdt_middle[r+1,z])    \
-                                    + (T_tdt_middle[r,z-1]-2*T_tdt[r,z]+T_tdt_middle[r,z+1])/(prm.dz**2)) \
-                                          + (T_tdt_middle[r,z])
+                T_tdt[r,z] = cste*((T_t[r-1,z]-2*T_t[r,z]+T_t[r+1,z])/(prm.dr**2)     \
+                                   + (1/(2*prm.dr*dist))*(T_t[r-1,z]-T_t[r+1,z])    \
+                                    + (T_t[r,z-1]-2*T_t[r,z]+T_t[r,z+1])/(prm.dz**2)) \
+                                          + (T_t[r,z])
            
             else:
                 pass
@@ -192,7 +191,7 @@ def Temperature(prm, T_t):
     """
 
     T_tdt = T_t.copy() # on copie T_t pour ne pas écraser les températures frontières qui sont utilisées dans le calcul des températures milieu
-    
+    T_tdt = Milieu(prm, T_tdt,T_t)
 
     sigma = prm.h * (T_t - prm.T_inf) + \
             prm.epsilon * prm.sigma * (T_t**4 - prm.T_inf**4)
@@ -202,29 +201,29 @@ def Temperature(prm, T_t):
             
             # extrémité supérieure (r=R)
             if r == 0:           
-                T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
-                                      +  4 * T_t[r+1,z] \
+                T_tdt[r,z] = (1/3) * ( -T_tdt[r+2,z] \
+                                      +  4 * T_tdt[r+1,z] \
                                         - (2*prm.dr * sigma[r,z] / prm.k) )
         
             # extrémité droite (z=H/2)
             elif z == prm.nz-1 or (z == prm.nz-1 and r == prm.nr-1):
-                T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
-                                      +  4 * T_t[r,z-1] \
+                T_tdt[r,z] = (1/3) * ( -T_tdt[r,z-2] \
+                                      +  4 * T_tdt[r,z-1] \
                                         - (2*prm.dz * sigma[r,z] / prm.k) )
                 
             # extrémité gauche (z=0)
             elif z == 0 or (z == 0  and r == prm.nr-1):   
-                T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+                T_tdt[r, z] = (4/3) * T_tdt[r, z+1] - (1/3) * T_tdt[r, z+2]
             
             # milieu (r = 0)
             # condition de symmétrie
             elif r == prm.nr-1:            
-                T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
+                T_tdt[r, z] = (4/3) * T_tdt[r-1, z] - (1/3) * T_tdt[r-2, z]
             
             
             
         
-    T_tdt = Milieu(prm, T_tdt)
+    
                 
     return T_tdt
 

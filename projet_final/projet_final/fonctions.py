@@ -249,23 +249,23 @@ def Temperature(prm, T_t):
 
                     # TOP (r=R), Robin
                     elif r == 0:           
-                        T_tdt[r,z] = (1/3) * ( -T_t[r+2,z] \
-                                            +  4 * T_t[r+1,z] \
+                        T_tdt[r,z] = (1/3) * ( -T_tdt[r+2,z] \
+                                            +  4 * T_tdt[r+1,z] \
                                                 - (2*prm.dr * conv_rad[r,z] / prm.k) )
                 
                     # RIGHT (z=H/2), Robin
                     elif z == prm.nz-1:
-                        T_tdt[r,z] = (1/3) * ( -T_t[r,z-2] \
-                                            +  4 * T_t[r,z-1] \
+                        T_tdt[r,z] = (1/3) * ( -T_tdt[r,z-2] \
+                                            +  4 * T_tdt[r,z-1] \
                                                 - (2*prm.dz * conv_rad[r,z] / prm.k) )
                         
                     # LEFT (z=0), Numann
                     elif z == 0:   
-                        T_tdt[r, z] = (4/3) * T_t[r, z+1] - (1/3) * T_t[r, z+2]
+                        T_tdt[r, z] = (4/3) * T_tdt[r, z+1] - (1/3) * T_tdt[r, z+2]
                     
                     # BOTTOM (r = 0), Neumann
                     elif r == prm.nr-1:            
-                        T_tdt[r, z] = (4/3) * T_t[r-1, z] - (1/3) * T_t[r-2, z]
+                        T_tdt[r, z] = (4/3) * T_tdt[r-1, z] - (1/3) * T_tdt[r-2, z]
                     # On force les coins
 
         for element in corners:
