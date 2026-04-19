@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sympy as sp
 import os
 try:
-    from fonctions import *
+    from .fonctions import *
 except ImportError:
     print("Error: Could not import the 'fonctions' module. Please ensure it is in the same directory as this script.")
     exit(1)
@@ -56,11 +55,9 @@ if __name__ == "__main__":
     def convergence_order(params, errors, n_fit=3):
         """Calcule l'ordre de convergence sur les n_fit plus grandes discrétisations."""
         if study_type == "rz":
-            print(f"Calcul de l'ordre de convergence en fonction de la discrétisation spatiale de debut:{n_fit}")
             p = params[:n_fit]
             e = errors[:n_fit]
         else:
-            print(f"Calcul de l'ordre de convergence en fonction du pas de temps de -{n_fit}:fin")
             p = params[-n_fit:]
             e = errors[-n_fit:]
             

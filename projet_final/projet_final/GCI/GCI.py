@@ -1,9 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import sys
 import math
 try:
-    from fonctions import *
+    from src.fonctions import *
 except ImportError:
     print("Error: Could not import the 'fonctions' module. Please ensure it is in the same directory as this script.")
     exit(1)
@@ -19,8 +17,6 @@ if __name__ == "__main__":
     Le Grid Convergence Index (GCI) est calculé pour chaque paramètre (temps,
     direction radiale et axiale), puis combiné pour estimer l'incertitude numérique
     globale (U_num).
-
-    Objectif : quantifier la convergence et l'erreur numérique du solveur.
     """
 
     # Initialisation des parametres

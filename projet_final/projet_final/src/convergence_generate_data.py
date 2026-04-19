@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import sympy as sp
 import os
 try:
-    from fonctions import *
+    from .fonctions import *
 except ImportError:
     print("Error: Could not import the 'fonctions' module. Please ensure it is in the same directory as this script.")
     exit(1)

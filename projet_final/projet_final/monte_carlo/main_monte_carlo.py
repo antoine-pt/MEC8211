@@ -1,15 +1,30 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 
 try:
     from fonctions_monte_carlo import *
 except ImportError:
     try:
-        from fonctions import *
+        from src.fonctions import *
     except ImportError:
         print("Error: Could not import the fonctions module.")
         exit(1)
+
+
+"""
+Script principal d'analyse d'incertitude par méthode de Monte Carlo
+selon la norme ASME V&V 20.
+
+Le script :
+- Exécute une simulation thermique nominale (solveur axisymétrique).
+- Calcule une quantité d'intérêt (QOI) : température moyenne en surface.
+- Propage les incertitudes des paramètres d'entrée (émissivité ε et conductivité k)
+  via des tirages aléatoires (Monte Carlo).
+- Estime l'incertitude d'entrée combinée u_input (écart-type des QOI).
+- Génère des visualisations (histogramme et analyses de sensibilité).
+
+Objectif : quantifier l'impact des incertitudes physiques sur la solution.
+"""
 
 # ==============================================================================
 # PARAMÈTRES DE LA SIMULATION

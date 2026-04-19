@@ -310,7 +310,7 @@ def monte_carlo_uinput(
     Selon ASME V&V 20, u_input est l'écart-type de la distribution
     de la QOI obtenue en propageant les incertitudes des entrées :
 
-        u_input = std( QOI(epsilon_i, k_i) )    i = 1…N
+        u_input = std( QOI(epsilon_i, k_i) )    i = 1...N
 
     Args:
         nr, nz          : discrétisation spatiale

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 try:
-    from fonctions import *
+    from .fonctions import *
 except ImportError:
     print("Error: Could not import the 'fonctions' module. Please ensure it is in the same directory as this script.")
     exit(1)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     T_diff_plot = T_simu_plot - T_ana_plot
 
     # displays 10 snapshots evenly spaced in time
-    for i in range(1,100,10):
+    for i in range(1,100,20):
         it = int(i/100 * timestep)
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
@@ -122,6 +122,6 @@ if __name__ == "__main__":
             ax.set_ylabel('Position r (m)')
 
         plt.tight_layout()
-        plt.show()
+    plt.show()
 
     ## ================== Fin MMS Solution =============================
